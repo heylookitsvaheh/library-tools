@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Library Search</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f4f1;
+  color: #111;
+  padding: 24px;
+  min-height: 100vh;
+}
+.wrap { max-width: 960px; margin: 0 auto; }
+
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  .header { gap: 8px; margin-bottom: 12px; }
+  .header h1 { font-size: 19px; }
+  .header .subtitle { font-size: 12.5px; }
+  .card { padding: 12px; border-radius: 12px; }
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.header h1 {
+  font-size: 22px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.header .subtitle {
+  font-size: 14px;
+  font-style: italic;
+  color: #6b7280;
+}
+
+.card {
+  background: white;
+  border-radius: 14px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+
+.search-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.search-row input[type=text] {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  font-size: 15px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.search-row input[type=text]:focus { border-color: #7c3aed; }
+.search-row input[type=text]:disabled { background: #f9fafb; color: #9ca3af; }
+
+.sort-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.sort-row label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.sort-row select {
+  padding: 8px 10px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-family: inherit;
+  background: white;
+  outline: none;
+}
+.sort-row select:focus { border-color: #7c3aed; }
+.sort-dir-btn {
+  padding: 8px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: white;
+  font-size: 14px;
+  cursor: pointer;
+  min-width: 40px;
+  min-height: 36px;
+}
+.sort-dir-btn:hover { background: #f3f4f6; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+.btn-ghost { background: #f3f4f6; color: #374151; }
+.btn-ghost:hover { background: #e5e7eb; }
+.btn:disabled { opacity: 0.5; cursor: default; }
+
+.result-count {
+  font-size: 13px;
+  color: #6b7280;
+  margin-top: 10px;
+  min-height: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+thead th {
+  text-align: left;
+  background: #1e3a8a;
+  color: white;
+  padding: 10px 12px;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+thead th:hover { background: #24469e; }
+thead th .sort-arrow {
+  display: inline-block;
+  width: 10px;
+  font-size: 10px;
+  margin-left: 3px;
+  opacity: 0.9;
+}
+tbody td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: top;
+}
+tbody tr:hover { background: #faf5ff; }
+tbody tr:last-child td { border-bottom: none; }
+
+.table-scroll { max-height: 60vh; overflow-y: auto; border-radius: 10px; }
+
+/* ─── Mobile: stack each row as a labeled card instead of a wide table ─── */
+@media (max-width: 640px) {
+  .table-scroll { max-height: 70vh; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  thead { display: none; }
+  tbody tr {
+    padding: 10px 12px;
+    border-bottom: 6px solid #f5f4f1;
+  }
+  tbody tr:hover { background: none; }
+  tbody td {
+    padding: 4px 0;
+    border-bottom: none;
+    font-size: 14.5px;
+  }
+  tbody td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #9ca3af;
+    margin-bottom: 1px;
+  }
+  tbody td:first-child {
+    font-weight: 700;
+    font-size: 16px;
+    margin-top: 2px;
+  }
+}
+
+.empty-hint {
+  font-size: 13.5px;
+  color: #9ca3af;
+  padding: 6px 2px 2px;
+}
+.no-results {
+  font-size: 13.5px;
+  color: #9ca3af;
+  padding: 18px 2px;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <h1>📚 Library Search</h1>
+    <div class="subtitle" id="lib-subtitle">Loading library…</div>
+  </div>
+
+  <div class="card">
+    <div class="search-row">
+      <input type="text" id="search-box" placeholder="Loading library…" disabled autocomplete="off" />
+      <button class="btn btn-ghost" id="clear-btn" onclick="clearSearch()" disabled>Clear</button>
+    </div>
+    <div class="sort-row">
+      <label for="sort-field">Sort by</label>
+      <select id="sort-field" onchange="setSort(this.value, true)">
+        <option value="">Relevance</option>
+        <option value="title">Title</option>
+        <option value="author">Author</option>
+        <option value="status">Status</option>
+        <option value="publisher">Publisher</option>
+        <option value="isbn">ISBN</option>
+      </select>
+      <button class="sort-dir-btn" id="sort-dir-btn" onclick="toggleSortDir()" title="Toggle sort direction">↑</button>
+    </div>
+    <div class="result-count" id="result-count"></div>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden;">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th data-field="title" onclick="setSort('title')">Title<span class="sort-arrow"></span></th>
+            <th data-field="author" onclick="setSort('author')">Author<span class="sort-arrow"></span></th>
+            <th data-field="status" onclick="setSort('status')">Status<span class="sort-arrow"></span></th>
+            <th data-field="publisher" onclick="setSort('publisher')">Publisher<span class="sort-arrow"></span></th>
+            <th data-field="isbn" onclick="setSort('isbn')">ISBN<span class="sort-arrow"></span></th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+    <div class="empty-hint" id="empty-hint" style="display:none;padding:16px 18px;">
+      Type a title, author, status, or publisher above to search the library.
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── Live data via JSONP (avoids CORS issues when opened as a local file) ──
+const SHEET_ID = '1YzaKIREZLWIxwC1NypQetYSBPmiE6WtScdiLX52fpts';
+const SHEET_NAME = 'Library v1';
+
+let _gvizCbSeq = 0;
+function gvizFetch(tq) {
+  return new Promise((resolve, reject) => {
+    const cbName = `__gvizCb${_gvizCbSeq++}`;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`
+      + `?tqx=out:json;responseHandler:${cbName}`
+      + `&sheet=${encodeURIComponent(SHEET_NAME)}`
+      + `&tq=${encodeURIComponent(tq)}`;
+
+    let settled = false;
+    const script = document.createElement('script');
+
+    function cleanup() {
+      delete window[cbName];
+      script.remove();
+      clearTimeout(timer);
+    }
+
+    window[cbName] = (parsed) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (parsed.status === 'error') {
+        const msg = (parsed.errors || []).map(e => e.detailed_message || e.message).join('; ');
+        reject(new Error(msg || 'query error'));
+      } else {
+        resolve(parsed);
+      }
+    };
+
+    script.onerror = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('Network error loading sheet data'));
+    };
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(new Error('Timed out loading sheet data'));
+    }, 15000);
+
+    script.src = url;
+    document.head.appendChild(script);
+  });
+}
+
+let ALL_BOOKS = [];
+let sortState = { field: null, dir: 1 }; // dir: 1 = ascending, -1 = descending
+
+function applySort(list) {
+  if (!sortState.field) return list;
+  const f = sortState.field;
+  return [...list].sort((a, b) => {
+    const av = (a[f] || '').toLowerCase();
+    const bv = (b[f] || '').toLowerCase();
+    if (av < bv) return -1 * sortState.dir;
+    if (av > bv) return 1 * sortState.dir;
+    return 0;
+  });
+}
+
+function syncSortUI() {
+  const select = document.getElementById('sort-field');
+  if (select) select.value = sortState.field || '';
+  const dirBtn = document.getElementById('sort-dir-btn');
+  if (dirBtn) {
+    dirBtn.textContent = sortState.dir === 1 ? '↑' : '↓';
+    dirBtn.disabled = !sortState.field;
+  }
+  document.querySelectorAll('th[data-field]').forEach(th => {
+    const f = th.getAttribute('data-field');
+    const arrow = th.querySelector('.sort-arrow');
+    if (!arrow) return;
+    arrow.textContent = (f === sortState.field) ? (sortState.dir === 1 ? '▲' : '▼') : '';
+  });
+}
+
+function setSort(field, fromSelect) {
+  if (!field) {
+    sortState.field = null;
+    sortState.dir = 1;
+  } else if (sortState.field === field && !fromSelect) {
+    sortState.dir *= -1;
+  } else {
+    sortState.field = field;
+    sortState.dir = 1;
+  }
+  syncSortUI();
+  runSearch();
+}
+
+function toggleSortDir() {
+  if (!sortState.field) return;
+  sortState.dir *= -1;
+  syncSortUI();
+  runSearch();
+}
+
+async function loadAllBooks() {
+  try {
+    const hd = await gvizFetch('select * limit 1');
+    const cols = {};
+    (hd.table?.cols || []).forEach((c, i) => {
+      if (c.label) cols[c.label.trim().toLowerCase()] = String.fromCharCode(65 + i);
+    });
+
+    const C = {
+      isbn:      cols['isbn']      || 'A',
+      genre:     cols['genre']     || 'B',
+      status:    cols['status']    || 'D',
+      title:     cols['title']     || 'E',
+      author:    cols['author']    || 'F',
+      publisher: cols['publisher'] || 'G',
+    };
+
+    const q = `select ${C.isbn}, ${C.title}, ${C.author}, ${C.status}, ${C.publisher}, ${C.genre} where ${C.title} is not null`;
+    const d = await gvizFetch(q);
+    const rows = d.table?.rows || [];
+
+    ALL_BOOKS = rows.map(r => {
+      const c = r.c || [];
+      const val = i => (c[i] && c[i].v != null) ? String(c[i].v).trim() : '';
+      return {
+        isbn: val(0), title: val(1), author: val(2), status: val(3),
+        publisher: val(4), genre: val(5)
+      };
+    }).filter(b => b.title);
+
+    const total = ALL_BOOKS.length;
+    const graphicCount = ALL_BOOKS.filter(b => b.genre === 'Graphic Novel').length;
+    const bookCount = total - graphicCount;
+    document.getElementById('lib-subtitle').textContent =
+      `A library with ${bookCount} books and ${graphicCount} graphic novels (${total} books total)`;
+
+    const box = document.getElementById('search-box');
+    box.disabled = false;
+    box.placeholder = 'Search by title, author, status, or publisher…';
+    document.getElementById('clear-btn').disabled = false;
+    document.getElementById('empty-hint').style.display = 'block';
+    box.focus();
+
+  } catch (e) {
+    console.error('loadAllBooks failed:', e);
+    document.getElementById('lib-subtitle').textContent = 'Could not load library — check your connection and reload.';
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function runSearch() {
+  const term = document.getElementById('search-box').value.trim().toLowerCase();
+  const tbody = document.getElementById('results-body');
+  const countEl = document.getElementById('result-count');
+  const emptyEl = document.getElementById('empty-hint');
+
+  if (!term) {
+    tbody.innerHTML = '';
+    countEl.textContent = '';
+    emptyEl.textContent = 'Type a title, author, status, or publisher above to search the library.';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  let matches = ALL_BOOKS.filter(b =>
+    b.title.toLowerCase().includes(term) ||
+    b.author.toLowerCase().includes(term) ||
+    b.status.toLowerCase().includes(term) ||
+    b.publisher.toLowerCase().includes(term)
+  );
+
+  countEl.textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''}`;
+
+  if (!matches.length) {
+    tbody.innerHTML = '';
+    emptyEl.textContent = 'No matches.';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  matches = applySort(matches);
+
+  emptyEl.style.display = 'none';
+  tbody.innerHTML = matches.map(b => `
+    <tr>
+      <td data-label="Title">${escapeHtml(b.title)}</td>
+      <td data-label="Author">${escapeHtml(b.author)}</td>
+      <td data-label="Status">${escapeHtml(b.status)}</td>
+      <td data-label="Publisher">${escapeHtml(b.publisher)}</td>
+      <td data-label="ISBN">${escapeHtml(b.isbn)}</td>
+    </tr>
+  `).join('');
+}
+
+function clearSearch() {
+  const box = document.getElementById('search-box');
+  box.value = '';
+  runSearch();
+  box.focus();
+}
+
+document.getElementById('search-box').addEventListener('input', runSearch);
+syncSortUI();
+loadAllBooks();
+</script>
+</body>
+</html>
