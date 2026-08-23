@@ -29,7 +29,7 @@ body {
   align-items: baseline;
   gap: 14px;
   flex-wrap: wrap;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 .header h1 {
   font-size: 22px;
@@ -41,6 +41,31 @@ body {
   font-style: italic;
   color: #6b7280;
 }
+
+.tab-bar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.tab-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 10px;
+  background: white;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  transition: background 0.12s, color 0.12s;
+}
+.tab-btn:hover { background: #f3f4f6; }
+.tab-btn.active { background: #1e3a8a; color: white; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
 
 .card {
   background: white;
@@ -162,38 +187,15 @@ tbody td {
 tbody tr:hover { background: #faf5ff; }
 tbody tr:last-child td { border-bottom: none; }
 
-.table-scroll { max-height: 60vh; overflow-y: auto; border-radius: 10px; }
+.table-scroll { max-height: 60vh; overflow-y: auto; overflow-x: auto; border-radius: 10px; -webkit-overflow-scrolling: touch; }
 
-/* ─── Mobile: stack each row as a labeled card instead of a wide table ─── */
+/* ─── Mobile/portrait: keep the compact table view, just shrink it and let it
+   scroll horizontally within its own box instead of stacking into cards ─── */
 @media (max-width: 640px) {
-  .table-scroll { max-height: 70vh; }
-  table, tbody, tr, td { display: block; width: 100%; }
-  thead { display: none; }
-  tbody tr {
-    padding: 10px 12px;
-    border-bottom: 6px solid #f5f4f1;
-  }
-  tbody tr:hover { background: none; }
-  tbody td {
-    padding: 4px 0;
-    border-bottom: none;
-    font-size: 14.5px;
-  }
-  tbody td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #9ca3af;
-    margin-bottom: 1px;
-  }
-  tbody td:first-child {
-    font-weight: 700;
-    font-size: 16px;
-    margin-top: 2px;
-  }
+  .table-scroll { max-height: 75vh; }
+  table { font-size: 12px; min-width: 560px; }
+  thead th { padding: 8px 8px; }
+  tbody td { padding: 7px 8px; }
 }
 
 .empty-hint {
@@ -213,47 +215,98 @@ tbody tr:last-child td { border-bottom: none; }
 
 <div class="wrap">
   <div class="header">
-    <h1>📚 Library Search</h1>
-    <div class="subtitle" id="lib-subtitle">Loading library…</div>
+    <h1>📚 Library</h1>
+    <div class="subtitle" id="page-subtitle">Loading…</div>
   </div>
 
-  <div class="card">
-    <div class="search-row">
-      <input type="text" id="search-box" placeholder="Loading library…" disabled autocomplete="off" />
-      <button class="btn btn-ghost" id="clear-btn" onclick="clearSearch()" disabled>Clear</button>
-    </div>
-    <div class="sort-row">
-      <label for="sort-field">Sort by</label>
-      <select id="sort-field" onchange="setSort(this.value, true)">
-        <option value="">Relevance</option>
-        <option value="title">Title</option>
-        <option value="author">Author</option>
-        <option value="status">Status</option>
-        <option value="publisher">Publisher</option>
-        <option value="isbn">ISBN</option>
-      </select>
-      <button class="sort-dir-btn" id="sort-dir-btn" onclick="toggleSortDir()" title="Toggle sort direction">↑</button>
-    </div>
-    <div class="result-count" id="result-count"></div>
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-btn-lib" onclick="showTab('lib')">Library Search</button>
+    <button class="tab-btn" id="tab-btn-col" onclick="showTab('col')">Collections Search</button>
   </div>
 
-  <div class="card" style="padding:0;overflow:hidden;">
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th data-field="title" onclick="setSort('title')">Title<span class="sort-arrow"></span></th>
-            <th data-field="author" onclick="setSort('author')">Author<span class="sort-arrow"></span></th>
-            <th data-field="status" onclick="setSort('status')">Status<span class="sort-arrow"></span></th>
-            <th data-field="publisher" onclick="setSort('publisher')">Publisher<span class="sort-arrow"></span></th>
-            <th data-field="isbn" onclick="setSort('isbn')">ISBN<span class="sort-arrow"></span></th>
-          </tr>
-        </thead>
-        <tbody id="results-body"></tbody>
-      </table>
+  <!-- ═══════════════════ LIBRARY SEARCH TAB ═══════════════════ -->
+  <div class="tab-panel active" id="tab-panel-lib">
+    <div class="card">
+      <div class="search-row">
+        <input type="text" id="lib-search-box" placeholder="Loading library…" disabled autocomplete="off" />
+        <button class="btn btn-ghost" id="lib-clear-btn" onclick="clearSearch('lib')" disabled>Clear</button>
+      </div>
+      <div class="sort-row">
+        <label for="lib-sort-field">Sort by</label>
+        <select id="lib-sort-field" onchange="setSort('lib', this.value, true)">
+          <option value="">Relevance</option>
+          <option value="title">Title</option>
+          <option value="author">Author</option>
+          <option value="status">Status</option>
+          <option value="publisher">Publisher</option>
+          <option value="isbn">ISBN</option>
+        </select>
+        <button class="sort-dir-btn" id="lib-sort-dir-btn" onclick="toggleSortDir('lib')" title="Toggle sort direction">↑</button>
+      </div>
+      <div class="result-count" id="lib-result-count"></div>
     </div>
-    <div class="empty-hint" id="empty-hint" style="display:none;padding:16px 18px;">
-      Type a title, author, status, or publisher above to search the library.
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-field="title" onclick="setSort('lib','title')">Title<span class="sort-arrow"></span></th>
+              <th data-field="author" onclick="setSort('lib','author')">Author<span class="sort-arrow"></span></th>
+              <th data-field="status" onclick="setSort('lib','status')">Status<span class="sort-arrow"></span></th>
+              <th data-field="publisher" onclick="setSort('lib','publisher')">Publisher<span class="sort-arrow"></span></th>
+              <th data-field="isbn" onclick="setSort('lib','isbn')">ISBN<span class="sort-arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="lib-results-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-hint" id="lib-empty-hint" style="display:none;padding:16px 18px;">
+        Type a title, author, status, or publisher above to search the library.
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ COLLECTIONS SEARCH TAB ═══════════════════ -->
+  <div class="tab-panel" id="tab-panel-col">
+    <div class="card">
+      <div class="search-row">
+        <input type="text" id="col-search-box" placeholder="Loading collections…" disabled autocomplete="off" />
+        <button class="btn btn-ghost" id="col-clear-btn" onclick="clearSearch('col')" disabled>Clear</button>
+      </div>
+      <div class="sort-row">
+        <label for="col-sort-field">Sort by</label>
+        <select id="col-sort-field" onchange="setSort('col', this.value, true)">
+          <option value="">Relevance</option>
+          <option value="title">Title</option>
+          <option value="author">Author</option>
+          <option value="series1">Series 1</option>
+          <option value="series2">Series 2</option>
+          <option value="status">Status</option>
+        </select>
+        <button class="sort-dir-btn" id="col-sort-dir-btn" onclick="toggleSortDir('col')" title="Toggle sort direction">↑</button>
+      </div>
+      <div class="result-count" id="col-result-count"></div>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th data-field="title" onclick="setSort('col','title')">Title<span class="sort-arrow"></span></th>
+              <th data-field="author" onclick="setSort('col','author')">Author<span class="sort-arrow"></span></th>
+              <th data-field="series1" onclick="setSort('col','series1')">Series 1<span class="sort-arrow"></span></th>
+              <th data-field="series2" onclick="setSort('col','series2')">Series 2<span class="sort-arrow"></span></th>
+              <th data-field="status" onclick="setSort('col','status')">Status<span class="sort-arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="col-results-body"></tbody>
+        </table>
+      </div>
+      <div class="empty-hint" id="col-empty-hint" style="display:none;padding:16px 18px;">
+        Type a title, series, author, or status above to search the Collections.
+      </div>
     </div>
   </div>
 </div>
@@ -261,15 +314,14 @@ tbody tr:last-child td { border-bottom: none; }
 <script>
 // ─── Live data via JSONP (avoids CORS issues when opened as a local file) ──
 const SHEET_ID = '1YzaKIREZLWIxwC1NypQetYSBPmiE6WtScdiLX52fpts';
-const SHEET_NAME = 'Library v1';
 
 let _gvizCbSeq = 0;
-function gvizFetch(tq) {
+function gvizFetch(sheetName, tq) {
   return new Promise((resolve, reject) => {
     const cbName = `__gvizCb${_gvizCbSeq++}`;
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq`
       + `?tqx=out:json;responseHandler:${cbName}`
-      + `&sheet=${encodeURIComponent(SHEET_NAME)}`
+      + `&sheet=${encodeURIComponent(sheetName)}`
       + `&tq=${encodeURIComponent(tq)}`;
 
     let settled = false;
@@ -312,61 +364,165 @@ function gvizFetch(tq) {
   });
 }
 
-let ALL_BOOKS = [];
-let sortState = { field: null, dir: 1 }; // dir: 1 = ascending, -1 = descending
+// ─── Per-tab state ───
+const STATE = {
+  lib: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','status','publisher','isbn'] },
+  col: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','series1','series2','status'] },
+};
 
-function applySort(list) {
-  if (!sortState.field) return list;
-  const f = sortState.field;
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function showTab(tab) {
+  document.getElementById('tab-panel-lib').classList.toggle('active', tab === 'lib');
+  document.getElementById('tab-panel-col').classList.toggle('active', tab === 'col');
+  document.getElementById('tab-btn-lib').classList.toggle('active', tab === 'lib');
+  document.getElementById('tab-btn-col').classList.toggle('active', tab === 'col');
+}
+
+function applySort(tab, list) {
+  const s = STATE[tab].sortState;
+  if (!s.field) return list;
+  const f = s.field;
   return [...list].sort((a, b) => {
     const av = (a[f] || '').toLowerCase();
     const bv = (b[f] || '').toLowerCase();
-    if (av < bv) return -1 * sortState.dir;
-    if (av > bv) return 1 * sortState.dir;
+    if (av < bv) return -1 * s.dir;
+    if (av > bv) return 1 * s.dir;
     return 0;
   });
 }
 
-function syncSortUI() {
-  const select = document.getElementById('sort-field');
-  if (select) select.value = sortState.field || '';
-  const dirBtn = document.getElementById('sort-dir-btn');
+function syncSortUI(tab) {
+  const s = STATE[tab].sortState;
+  const select = document.getElementById(`${tab}-sort-field`);
+  if (select) select.value = s.field || '';
+  const dirBtn = document.getElementById(`${tab}-sort-dir-btn`);
   if (dirBtn) {
-    dirBtn.textContent = sortState.dir === 1 ? '↑' : '↓';
-    dirBtn.disabled = !sortState.field;
+    dirBtn.textContent = s.dir === 1 ? '↑' : '↓';
+    dirBtn.disabled = !s.field;
   }
-  document.querySelectorAll('th[data-field]').forEach(th => {
+  document.querySelectorAll(`#tab-panel-${tab} th[data-field]`).forEach(th => {
     const f = th.getAttribute('data-field');
     const arrow = th.querySelector('.sort-arrow');
     if (!arrow) return;
-    arrow.textContent = (f === sortState.field) ? (sortState.dir === 1 ? '▲' : '▼') : '';
+    arrow.textContent = (f === s.field) ? (s.dir === 1 ? '▲' : '▼') : '';
   });
 }
 
-function setSort(field, fromSelect) {
+function setSort(tab, field, fromSelect) {
+  const s = STATE[tab].sortState;
   if (!field) {
-    sortState.field = null;
-    sortState.dir = 1;
-  } else if (sortState.field === field && !fromSelect) {
-    sortState.dir *= -1;
+    s.field = null;
+    s.dir = 1;
+  } else if (s.field === field && !fromSelect) {
+    s.dir *= -1;
   } else {
-    sortState.field = field;
-    sortState.dir = 1;
+    s.field = field;
+    s.dir = 1;
   }
-  syncSortUI();
-  runSearch();
+  syncSortUI(tab);
+  runSearch(tab);
 }
 
-function toggleSortDir() {
-  if (!sortState.field) return;
-  sortState.dir *= -1;
-  syncSortUI();
-  runSearch();
+function toggleSortDir(tab) {
+  const s = STATE[tab].sortState;
+  if (!s.field) return;
+  s.dir *= -1;
+  syncSortUI(tab);
+  runSearch(tab);
 }
 
-async function loadAllBooks() {
+function runSearch(tab) {
+  const term = document.getElementById(`${tab}-search-box`).value.trim().toLowerCase();
+  const tbody = document.getElementById(`${tab}-results-body`);
+  const countEl = document.getElementById(`${tab}-result-count`);
+  const emptyEl = document.getElementById(`${tab}-empty-hint`);
+  const fields = STATE[tab].fields;
+  const defaultHint = tab === 'lib'
+    ? 'Type a title, author, status, or publisher above to search the library.'
+    : 'Type a title, series, author, or status above to search the Collections.';
+
+  if (!term) {
+    tbody.innerHTML = '';
+    countEl.textContent = '';
+    emptyEl.textContent = defaultHint;
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  let matches = STATE[tab].items.filter(item =>
+    fields.some(f => (item[f] || '').toLowerCase().includes(term))
+  );
+
+  countEl.textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''}`;
+
+  if (!matches.length) {
+    tbody.innerHTML = '';
+    emptyEl.textContent = 'No matches.';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  matches = applySort(tab, matches);
+
+  emptyEl.style.display = 'none';
+  if (tab === 'lib') {
+    tbody.innerHTML = matches.map(b => `
+      <tr>
+        <td data-label="Title">${escapeHtml(b.title)}</td>
+        <td data-label="Author">${escapeHtml(b.author)}</td>
+        <td data-label="Status">${escapeHtml(b.status)}</td>
+        <td data-label="Publisher">${escapeHtml(b.publisher)}</td>
+        <td data-label="ISBN">${escapeHtml(b.isbn)}</td>
+      </tr>
+    `).join('');
+  } else {
+    tbody.innerHTML = matches.map(b => `
+      <tr>
+        <td data-label="Title">${escapeHtml(b.title)}</td>
+        <td data-label="Author">${escapeHtml(b.author)}</td>
+        <td data-label="Series 1">${escapeHtml(b.series1)}</td>
+        <td data-label="Series 2">${escapeHtml(b.series2)}</td>
+        <td data-label="Status">${escapeHtml(b.status)}</td>
+      </tr>
+    `).join('');
+  }
+}
+
+function clearSearch(tab) {
+  const box = document.getElementById(`${tab}-search-box`);
+  box.value = '';
+  runSearch(tab);
+  box.focus();
+}
+
+function updatePageSubtitle() {
+  const libLoaded = STATE.lib.loaded;
+  const colLoaded = STATE.col.loaded;
+  if (!libLoaded && !colLoaded) {
+    document.getElementById('page-subtitle').textContent = 'Loading…';
+    return;
+  }
+  const total = STATE.lib.items.length;
+  const graphicCount = STATE.lib.items.filter(b => b.genre === 'Graphic Novel').length;
+  const bookCount = total - graphicCount;
+  const colCount = STATE.col.items.length;
+  if (libLoaded && colLoaded) {
+    document.getElementById('page-subtitle').textContent =
+      `${bookCount} books, ${graphicCount} graphic novels, ${colCount} collection entries`;
+  } else if (libLoaded) {
+    document.getElementById('page-subtitle').textContent =
+      `A library with ${bookCount} books and ${graphicCount} graphic novels (${total} books total)`;
+  } else {
+    document.getElementById('page-subtitle').textContent = `A collection with ${colCount} entr${colCount === 1 ? 'y' : 'ies'}`;
+  }
+}
+
+async function loadLibrary() {
   try {
-    const hd = await gvizFetch('select * limit 1');
+    const hd = await gvizFetch('Library v1', 'select * limit 1');
     const cols = {};
     (hd.table?.cols || []).forEach((c, i) => {
       if (c.label) cols[c.label.trim().toLowerCase()] = String.fromCharCode(65 + i);
@@ -382,10 +538,10 @@ async function loadAllBooks() {
     };
 
     const q = `select ${C.isbn}, ${C.title}, ${C.author}, ${C.status}, ${C.publisher}, ${C.genre} where ${C.title} is not null`;
-    const d = await gvizFetch(q);
+    const d = await gvizFetch('Library v1', q);
     const rows = d.table?.rows || [];
 
-    ALL_BOOKS = rows.map(r => {
+    STATE.lib.items = rows.map(r => {
       const c = r.c || [];
       const val = i => (c[i] && c[i].v != null) ? String(c[i].v).trim() : '';
       return {
@@ -393,84 +549,69 @@ async function loadAllBooks() {
         publisher: val(4), genre: val(5)
       };
     }).filter(b => b.title);
+    STATE.lib.loaded = true;
+    updatePageSubtitle();
 
-    const total = ALL_BOOKS.length;
-    const graphicCount = ALL_BOOKS.filter(b => b.genre === 'Graphic Novel').length;
-    const bookCount = total - graphicCount;
-    document.getElementById('lib-subtitle').textContent =
-      `A library with ${bookCount} books and ${graphicCount} graphic novels (${total} books total)`;
-
-    const box = document.getElementById('search-box');
+    const box = document.getElementById('lib-search-box');
     box.disabled = false;
     box.placeholder = 'Search by title, author, status, or publisher…';
-    document.getElementById('clear-btn').disabled = false;
-    document.getElementById('empty-hint').style.display = 'block';
-    box.focus();
+    document.getElementById('lib-clear-btn').disabled = false;
+    document.getElementById('lib-empty-hint').style.display = 'block';
 
   } catch (e) {
-    console.error('loadAllBooks failed:', e);
-    document.getElementById('lib-subtitle').textContent = 'Could not load library — check your connection and reload.';
+    console.error('loadLibrary failed:', e);
+    document.getElementById('lib-empty-hint').style.display = 'block';
+    document.getElementById('lib-empty-hint').textContent = 'Could not load library — check your connection and reload.';
   }
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-}
+async function loadCollections() {
+  try {
+    const hd = await gvizFetch('Collections', 'select * limit 1');
+    const cols = {};
+    (hd.table?.cols || []).forEach((c, i) => {
+      if (c.label) cols[c.label.trim().toLowerCase()] = String.fromCharCode(65 + i);
+    });
 
-function runSearch() {
-  const term = document.getElementById('search-box').value.trim().toLowerCase();
-  const tbody = document.getElementById('results-body');
-  const countEl = document.getElementById('result-count');
-  const emptyEl = document.getElementById('empty-hint');
+    const C = {
+      series1: cols['series 1'] || cols['series1'] || 'A',
+      series2: cols['series 2'] || cols['series2'] || 'B',
+      title:   cols['title']    || 'C',
+      author:  cols['author']   || 'D',
+      status:  cols['status']   || 'E',
+    };
 
-  if (!term) {
-    tbody.innerHTML = '';
-    countEl.textContent = '';
-    emptyEl.textContent = 'Type a title, author, status, or publisher above to search the library.';
-    emptyEl.style.display = 'block';
-    return;
+    const q = `select ${C.title}, ${C.author}, ${C.series1}, ${C.series2}, ${C.status} where ${C.title} is not null`;
+    const d = await gvizFetch('Collections', q);
+    const rows = d.table?.rows || [];
+
+    STATE.col.items = rows.map(r => {
+      const c = r.c || [];
+      const val = i => (c[i] && c[i].v != null) ? String(c[i].v).trim() : '';
+      return { title: val(0), author: val(1), series1: val(2), series2: val(3), status: val(4) };
+    }).filter(b => b.title);
+    STATE.col.loaded = true;
+    updatePageSubtitle();
+
+    const box = document.getElementById('col-search-box');
+    box.disabled = false;
+    box.placeholder = 'Search by title, series, or author…';
+    document.getElementById('col-clear-btn').disabled = false;
+    document.getElementById('col-empty-hint').style.display = 'block';
+
+  } catch (e) {
+    console.error('loadCollections failed:', e);
+    document.getElementById('col-empty-hint').style.display = 'block';
+    document.getElementById('col-empty-hint').textContent = 'Could not load collections — check your connection and reload.';
   }
-
-  let matches = ALL_BOOKS.filter(b =>
-    b.title.toLowerCase().includes(term) ||
-    b.author.toLowerCase().includes(term) ||
-    b.status.toLowerCase().includes(term) ||
-    b.publisher.toLowerCase().includes(term)
-  );
-
-  countEl.textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''}`;
-
-  if (!matches.length) {
-    tbody.innerHTML = '';
-    emptyEl.textContent = 'No matches.';
-    emptyEl.style.display = 'block';
-    return;
-  }
-
-  matches = applySort(matches);
-
-  emptyEl.style.display = 'none';
-  tbody.innerHTML = matches.map(b => `
-    <tr>
-      <td data-label="Title">${escapeHtml(b.title)}</td>
-      <td data-label="Author">${escapeHtml(b.author)}</td>
-      <td data-label="Status">${escapeHtml(b.status)}</td>
-      <td data-label="Publisher">${escapeHtml(b.publisher)}</td>
-      <td data-label="ISBN">${escapeHtml(b.isbn)}</td>
-    </tr>
-  `).join('');
 }
 
-function clearSearch() {
-  const box = document.getElementById('search-box');
-  box.value = '';
-  runSearch();
-  box.focus();
-}
-
-document.getElementById('search-box').addEventListener('input', runSearch);
-syncSortUI();
-loadAllBooks();
+document.getElementById('lib-search-box').addEventListener('input', () => runSearch('lib'));
+document.getElementById('col-search-box').addEventListener('input', () => runSearch('col'));
+syncSortUI('lib');
+syncSortUI('col');
+loadLibrary();
+loadCollections();
 </script>
 </body>
 </html>
