@@ -93,21 +93,21 @@ body {
 .search-row input[type=text]:focus { border-color: #7c3aed; }
 .search-row input[type=text]:disabled { background: #f9fafb; color: #9ca3af; }
 
-.sort-row {
+.sort-row, .filter-row {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 12px;
   flex-wrap: wrap;
 }
-.sort-row label {
+.sort-row label, .filter-row label {
   font-size: 12px;
   font-weight: 600;
   color: #9ca3af;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.sort-row select {
+.sort-row select, .filter-row select {
   padding: 8px 10px;
   border: 1.5px solid #e5e7eb;
   border-radius: 8px;
@@ -116,7 +116,28 @@ body {
   background: white;
   outline: none;
 }
-.sort-row select:focus { border-color: #7c3aed; }
+.sort-row select:focus, .filter-row select:focus { border-color: #7c3aed; }
+.filter-row select:disabled { background: #f9fafb; color: #9ca3af; }
+
+.status-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.status-owned { background: #dcfce7; color: #166534; }
+.status-wishlisted { background: #fef3c7; color: #92400e; }
+.status-wishlistedplus { background: #fce7f3; color: #9d174d; }
+.status-tobefound { background: #fee2e2; color: #991b1b; }
+.status-na { background: #f3f4f6; color: #6b7280; }
+.status-read { background: #dcfce7; color: #166534; }
+.status-borrowed { background: #dbeafe; color: #1e40af; }
+.status-missing { background: #fee2e2; color: #991b1b; }
+.status-donated { background: #f3f4f6; color: #6b7280; }
 .sort-dir-btn {
   padding: 8px 12px;
   border: 1.5px solid #e5e7eb;
@@ -274,15 +295,21 @@ tbody tr:last-child td { border-bottom: none; }
         <input type="text" id="col-search-box" placeholder="Loading collections…" disabled autocomplete="off" />
         <button class="btn btn-ghost" id="col-clear-btn" onclick="clearSearch('col')" disabled>Clear</button>
       </div>
+      <div class="filter-row">
+        <label for="col-series2-filter">Series 2</label>
+        <select id="col-series2-filter" onchange="setSeries2Filter(this.value)" disabled>
+          <option value="">All Series 2</option>
+        </select>
+      </div>
       <div class="sort-row">
         <label for="col-sort-field">Sort by</label>
         <select id="col-sort-field" onchange="setSort('col', this.value, true)">
           <option value="">Relevance</option>
           <option value="title">Title</option>
+          <option value="status">Status</option>
           <option value="author">Author</option>
           <option value="series1">Series 1</option>
           <option value="series2">Series 2</option>
-          <option value="status">Status</option>
         </select>
         <button class="sort-dir-btn" id="col-sort-dir-btn" onclick="toggleSortDir('col')" title="Toggle sort direction">↑</button>
       </div>
@@ -295,10 +322,10 @@ tbody tr:last-child td { border-bottom: none; }
           <thead>
             <tr>
               <th data-field="title" onclick="setSort('col','title')">Title<span class="sort-arrow"></span></th>
+              <th data-field="status" onclick="setSort('col','status')">Status<span class="sort-arrow"></span></th>
               <th data-field="author" onclick="setSort('col','author')">Author<span class="sort-arrow"></span></th>
               <th data-field="series1" onclick="setSort('col','series1')">Series 1<span class="sort-arrow"></span></th>
               <th data-field="series2" onclick="setSort('col','series2')">Series 2<span class="sort-arrow"></span></th>
-              <th data-field="status" onclick="setSort('col','status')">Status<span class="sort-arrow"></span></th>
             </tr>
           </thead>
           <tbody id="col-results-body"></tbody>
@@ -367,11 +394,34 @@ function gvizFetch(sheetName, tq) {
 // ─── Per-tab state ───
 const STATE = {
   lib: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','status','publisher','isbn'] },
-  col: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','series1','series2','status'] },
+  col: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','series1','series2','status'], series2Filter: '' },
 };
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+function statusClass(status) {
+  const key = String(status || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+  return 'status-' + (key || 'na');
+}
+
+function statusChipHtml(status) {
+  if (!status) return '';
+  return `<span class="status-chip ${statusClass(status)}">${escapeHtml(status)}</span>`;
+}
+
+function setSeries2Filter(value) {
+  STATE.col.series2Filter = value;
+  runSearch('col');
+}
+
+function populateSeries2Filter() {
+  const select = document.getElementById('col-series2-filter');
+  const values = [...new Set(STATE.col.items.map(b => b.series2).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  select.innerHTML = '<option value="">All Series 2</option>' +
+    values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  select.disabled = false;
 }
 
 function showTab(tab) {
@@ -440,11 +490,12 @@ function runSearch(tab) {
   const countEl = document.getElementById(`${tab}-result-count`);
   const emptyEl = document.getElementById(`${tab}-empty-hint`);
   const fields = STATE[tab].fields;
+  const series2Filter = tab === 'col' ? STATE.col.series2Filter : '';
   const defaultHint = tab === 'lib'
     ? 'Type a title, author, status, or publisher above to search the library.'
-    : 'Type a title, series, author, or status above to search the Collections.';
+    : 'Type a title, series, author, or status above to search the Collections, or pick a Series 2 value.';
 
-  if (!term) {
+  if (!term && !series2Filter) {
     tbody.innerHTML = '';
     countEl.textContent = '';
     emptyEl.textContent = defaultHint;
@@ -453,7 +504,8 @@ function runSearch(tab) {
   }
 
   let matches = STATE[tab].items.filter(item =>
-    fields.some(f => (item[f] || '').toLowerCase().includes(term))
+    (!term || fields.some(f => (item[f] || '').toLowerCase().includes(term))) &&
+    (!series2Filter || item.series2 === series2Filter)
   );
 
   countEl.textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''}`;
@@ -473,7 +525,7 @@ function runSearch(tab) {
       <tr>
         <td data-label="Title">${escapeHtml(b.title)}</td>
         <td data-label="Author">${escapeHtml(b.author)}</td>
-        <td data-label="Status">${escapeHtml(b.status)}</td>
+        <td data-label="Status">${statusChipHtml(b.status)}</td>
         <td data-label="Publisher">${escapeHtml(b.publisher)}</td>
         <td data-label="ISBN">${escapeHtml(b.isbn)}</td>
       </tr>
@@ -482,10 +534,10 @@ function runSearch(tab) {
     tbody.innerHTML = matches.map(b => `
       <tr>
         <td data-label="Title">${escapeHtml(b.title)}</td>
+        <td data-label="Status">${statusChipHtml(b.status)}</td>
         <td data-label="Author">${escapeHtml(b.author)}</td>
         <td data-label="Series 1">${escapeHtml(b.series1)}</td>
         <td data-label="Series 2">${escapeHtml(b.series2)}</td>
-        <td data-label="Status">${escapeHtml(b.status)}</td>
       </tr>
     `).join('');
   }
@@ -598,6 +650,7 @@ async function loadCollections() {
     box.placeholder = 'Search by title, series, or author…';
     document.getElementById('col-clear-btn').disabled = false;
     document.getElementById('col-empty-hint').style.display = 'block';
+    populateSeries2Filter();
 
   } catch (e) {
     console.error('loadCollections failed:', e);
