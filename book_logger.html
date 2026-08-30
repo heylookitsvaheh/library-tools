@@ -156,6 +156,51 @@ textarea { resize: vertical; min-height: 60px; }
 .book-title { font-weight: 600; font-size: 14px; }
 .book-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
 
+/* Barcode scanner overlay */
+.scanner-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(17,17,17,0.92);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 24px;
+}
+.scanner-overlay.show { display: flex; }
+.scanner-video-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 4 / 3;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+}
+.scanner-video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.scanner-frame {
+  position: absolute;
+  top: 32%; left: 8%; right: 8%; bottom: 32%;
+  border: 2px solid #a78bfa;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1000px rgba(0,0,0,0.45);
+  pointer-events: none;
+}
+.scanner-frame.found { border-color: #34d399; }
+.scanner-hint { color: #e5e7eb; font-size: 13px; margin-top: 16px; text-align: center; max-width: 440px; line-height: 1.5; }
+.scanner-error { color: #fca5a5; font-size: 13px; margin-top: 8px; text-align: center; min-height: 18px; max-width: 440px; }
+.scanner-cancel { margin-top: 16px; }
+.btn-scan {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 10px;
+}
+
 .copy-confirm { font-size: 13px; color: #059669; margin-top: 10px; display: none; }
 .copy-confirm.show { display: block; }
 
@@ -167,6 +212,7 @@ textarea { resize: vertical; min-height: 60px; }
 }
 .sheet-link:hover { text-decoration: underline; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 </head>
 <body>
 
@@ -237,6 +283,7 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="card">
     <input class="isbn-input" type="text" id="isbn-val" placeholder="978…" inputmode="numeric"
       onkeydown="if(event.key==='Enter') doLookup()" autocomplete="off" />
+    <button class="btn btn-ghost btn-scan" onclick="openScanner()">📷 Scan Barcode</button>
     <div id="isbn-status" class="status"></div>
   </div>
 
@@ -246,6 +293,19 @@ textarea { resize: vertical; min-height: 60px; }
     <button class="btn btn-ghost" onclick="skipToDetails()">Skip →</button>
     <button class="btn btn-primary" id="lookup-btn" onclick="doLookup()">Look Up →</button>
   </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     Barcode Scanner Overlay
+═══════════════════════════════════════════ -->
+<div id="scanner-overlay" class="scanner-overlay">
+  <div class="scanner-video-wrap">
+    <video id="scanner-video" muted playsinline autoplay></video>
+    <div class="scanner-frame" id="scanner-frame"></div>
+  </div>
+  <div class="scanner-hint">Hold the book's back-cover barcode a few inches from the camera, inside the box.</div>
+  <div id="scanner-error" class="scanner-error"></div>
+  <button class="btn btn-ghost scanner-cancel" onclick="closeScanner()">Cancel</button>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -635,6 +695,75 @@ textarea { resize: vertical; min-height: 60px; }
 </div>
 
 <script>
+// ─── Barcode Scanner ────────────────────────────────────────
+// Book barcodes are printed as EAN-13 ("Bookland EAN", 978/979 prefix),
+// even for older ISBN-10 titles — restricting to EAN_13 cuts down on
+// misreads from other stray codes in frame (price stickers, etc).
+let zxingReader = null;
+let scannerActive = false;
+
+function scannerSupported() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.ZXing);
+}
+
+async function openScanner() {
+  const overlay = document.getElementById('scanner-overlay');
+  const errEl = document.getElementById('scanner-error');
+  errEl.textContent = '';
+  document.getElementById('scanner-frame').classList.remove('found');
+
+  if (!scannerSupported()) {
+    errEl.textContent = 'Camera scanning isn\'t available in this browser — enter the ISBN manually instead.';
+    overlay.classList.add('show');
+    return;
+  }
+
+  overlay.classList.add('show');
+  scannerActive = true;
+
+  try {
+    if (!zxingReader) {
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13]);
+      zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+    }
+
+    const devices = await zxingReader.listVideoInputDevices();
+    if (!devices.length) throw new Error('No camera found');
+    // Prefer a rear/back/environment-facing camera when one is labeled (phones);
+    // MacBooks etc. will just have the one built-in camera.
+    const preferred = devices.find(d => /back|rear|environment/i.test(d.label));
+    const deviceId = (preferred || devices[0]).deviceId;
+
+    zxingReader.decodeFromVideoDevice(deviceId, 'scanner-video', (result, err) => {
+      if (!scannerActive) return;
+      if (result) {
+        const text = result.getText().replace(/[-\s]/g, '');
+        document.getElementById('scanner-frame').classList.add('found');
+        document.getElementById('isbn-val').value = text;
+        setTimeout(() => {
+          closeScanner();
+          doLookup();
+        }, 200);
+      }
+      // NotFoundException fires continuously between frames while no code is
+      // in view — that's normal scanning noise, not a real error.
+    });
+  } catch (e) {
+    errEl.textContent = (e && e.name === 'NotAllowedError')
+      ? 'Camera access was denied — allow camera access for this page, or enter the ISBN manually.'
+      : `Camera error: ${e.message || e} — enter the ISBN manually instead.`;
+  }
+}
+
+function closeScanner() {
+  scannerActive = false;
+  document.getElementById('scanner-overlay').classList.remove('show');
+  if (zxingReader) {
+    try { zxingReader.reset(); } catch (e) { /* already stopped */ }
+  }
+}
+
 // ─── State ───────────────────────────────────────────────
 const ST = {
   n: 1,
@@ -797,10 +926,29 @@ function suggestGenreSubgenre(hints) {
 // Instead we query every free source we can reach IN PARALLEL and MERGE the
 // results field-by-field, so a gap in one source gets filled by another
 // instead of the whole lookup living or dying on a single API's data quality.
+//
+// Each request is capped with an explicit timeout. A source that's blocked
+// or unreachable on a given network (firewall, DNS filtering, VPN, etc.)
+// otherwise hangs forever with no error and no rejection — and since these
+// run inside Promise.all, one silently-stuck source freezes "Looking up…"
+// permanently even though the other sources already came back.
+const LOOKUP_TIMEOUT_MS = 7000;
+
+async function fetchWithTimeout(url, ms = LOOKUP_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const GOOGLE_BOOKS_API_KEY = 'AIzaSyCcOEJFMGS29NOuX96CcnrWwBgilAKtyvM';
 
 async function fetchGoogleBooks(raw) {
   try {
-    const r = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${raw}`);
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=isbn:${raw}&key=${GOOGLE_BOOKS_API_KEY}`);
     const json = await r.json();
     const v = json.items && json.items[0] && json.items[0].volumeInfo;
     if (!v || !v.title) return null;
@@ -815,7 +963,7 @@ async function fetchGoogleBooks(raw) {
 // Open Library's richest endpoint — normalized publisher/author objects.
 async function fetchOpenLibraryData(raw) {
   try {
-    const r = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${raw}&jscmd=data&format=json`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${raw}&jscmd=data&format=json`);
     const json = await r.json();
     const book = json[`ISBN:${raw}`];
     if (!book || !book.title) return null;
@@ -832,7 +980,7 @@ async function fetchOpenLibraryData(raw) {
 
 async function fetchOpenLibrarySearch(raw) {
   try {
-    const r = await fetch(`https://openlibrary.org/search.json?isbn=${raw}&fields=title,author_name,publisher,first_publish_year,number_of_pages_median,subject`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/search.json?isbn=${raw}&fields=title,author_name,publisher,first_publish_year,number_of_pages_median,subject`);
     const json = await r.json();
     const doc = json.docs && json.docs[0];
     if (!doc || !doc.title) return null;
@@ -849,7 +997,7 @@ async function fetchOpenLibrarySearch(raw) {
 // exact printing, since it isn't going through a search index.
 async function fetchOpenLibraryIsbn(raw) {
   try {
-    const r = await fetch(`https://openlibrary.org/isbn/${raw}.json`);
+    const r = await fetchWithTimeout(`https://openlibrary.org/isbn/${raw}.json`);
     if (!r.ok) return null;
     const book = await r.json();
     if (!book || !book.title) return null;
@@ -857,7 +1005,7 @@ async function fetchOpenLibraryIsbn(raw) {
     if (book.authors && book.authors.length) {
       const names = await Promise.all(book.authors.map(async a => {
         try {
-          const ar = await fetch(`https://openlibrary.org${a.key}.json`);
+          const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
           const ad = await ar.json();
           return ad.name || '';
         } catch(e) { return ''; }
@@ -1070,12 +1218,11 @@ function newSession() {
 const SHEET_ID = '1YzaKIREZLWIxwC1NypQetYSBPmiE6WtScdiLX52fpts';
 const SHEET_NAME = 'Library v1';
 
-// This file may be opened as a local file:// page, which sends "Origin: null"
-// on fetch() requests. Google's gviz endpoint doesn't return CORS headers for
-// a null origin, so fetch() is blocked outright — no query fix can work
-// around that. Script-tag (JSONP) loading isn't subject to CORS at all, and
-// the gviz endpoint natively supports it via tqx=responseHandler, so we use
-// that instead, which also works fine when hosted at a real URL.
+// This file is opened as a local file:// page, which sends "Origin: null" on
+// fetch() requests. Google's gviz endpoint doesn't return CORS headers for a
+// null origin, so fetch() is blocked outright — no query fix can work around
+// that. Script-tag (JSONP) loading isn't subject to CORS at all, and the gviz
+// endpoint natively supports it via tqx=responseHandler, so we use that instead.
 let _gvizCbSeq = 0;
 function gvizFetch(tq) {
   return new Promise((resolve, reject) => {
