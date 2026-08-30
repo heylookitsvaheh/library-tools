@@ -2,17 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Book Logger</title>
 <style>
 :root { color-scheme: light; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { -webkit-text-size-adjust: 100%; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #f5f4f1;
   color: #111;
   padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* Screens */
@@ -59,10 +65,10 @@ body {
 
 input[type=text], input[type=number], input[type=date], select, textarea {
   width: 100%;
-  padding: 10px 13px;
+  padding: 12px 13px;
   border: 1.5px solid #e5e7eb;
   border-radius: 9px;
-  font-size: 14px;
+  font-size: 16px;
   font-family: inherit;
   color: #111;
   background: white;
@@ -96,6 +102,7 @@ textarea { resize: vertical; min-height: 60px; }
   align-items: center;
   justify-content: center;
   padding: 11px 20px;
+  min-height: 44px;
   border: none;
   border-radius: 9px;
   font-size: 14px;
@@ -173,7 +180,7 @@ textarea { resize: vertical; min-height: 60px; }
   position: relative;
   width: 100%;
   max-width: 440px;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 4;
   border-radius: 14px;
   overflow: hidden;
   background: #000;
@@ -186,19 +193,77 @@ textarea { resize: vertical; min-height: 60px; }
 }
 .scanner-frame {
   position: absolute;
-  top: 32%; left: 8%; right: 8%; bottom: 32%;
+  top: 40%; left: 6%; right: 6%; bottom: 40%;
   border: 2px solid #a78bfa;
   border-radius: 8px;
   box-shadow: 0 0 0 1000px rgba(0,0,0,0.45);
   pointer-events: none;
+  transition: border-color 0.15s;
 }
 .scanner-frame.found { border-color: #34d399; }
+.scanner-bulk-badge {
+  position: absolute;
+  top: 12px; right: 12px;
+  background: rgba(124,58,237,0.92);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  display: none;
+}
+.scanner-toast {
+  position: absolute;
+  left: 10px; right: 10px; bottom: 10px;
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  text-align: center;
+  line-height: 1.4;
+  display: none;
+}
+.scanner-toast.warn { background: rgba(220,38,38,0.85); }
 .scanner-hint { color: #e5e7eb; font-size: 13px; margin-top: 16px; text-align: center; max-width: 440px; line-height: 1.5; }
 .scanner-error { color: #fca5a5; font-size: 13px; margin-top: 8px; text-align: center; min-height: 18px; max-width: 440px; }
 .scanner-cancel { margin-top: 16px; }
 .btn-scan {
   display: flex; align-items: center; justify-content: center; gap: 8px;
   width: 100%; margin-top: 10px;
+}
+
+/* Bulk mode toggle + status badges */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.toggle-row .toggle-text { flex: 1; }
+.toggle-row .toggle-title { font-size: 13px; font-weight: 600; color: #374151; text-transform: none; letter-spacing: 0; }
+.toggle-row .toggle-sub { font-size: 12px; color: #9ca3af; margin-top: 2px; font-weight: 400; }
+.toggle-row input[type=checkbox] { width: 24px; height: 24px; flex-shrink: 0; accent-color: #7c3aed; cursor: pointer; }
+
+.badge-warn {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 2px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+.review-row-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  min-height: 36px;
+  flex-shrink: 0;
 }
 
 .copy-confirm { font-size: 13px; color: #059669; margin-top: 10px; display: none; }
@@ -234,6 +299,15 @@ textarea { resize: vertical; min-height: 60px; }
 
   <div class="card">
     <div class="field">
+      <label class="toggle-row">
+        <span class="toggle-text">
+          <span class="toggle-title">⚡ Bulk Scan Mode</span>
+          <span class="toggle-sub">Scan a whole stack of books back-to-back — each one auto-saves, review details afterward.</span>
+        </span>
+        <input type="checkbox" id="s-bulk-toggle" />
+      </label>
+    </div>
+    <div class="field" id="s-count-field">
       <label>How many books?</label>
       <input type="number" id="s-count" min="1" max="200" value="1" />
     </div>
@@ -266,6 +340,15 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
 
   <button class="btn btn-primary btn-full" onclick="startSession()">Start →</button>
+
+  <div class="card" style="margin-top:16px;">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Continue From Another Device</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:14px;line-height:1.5;">
+      Scanned a batch on your phone? Import the session file(s) you shared from it — one or several — to review and finish them here.
+    </div>
+    <input type="file" id="import-file-input" accept="application/json" multiple style="display:none;" onchange="handleImportFiles(this.files)" />
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('import-file-input').click()">📥 Import Session File(s)</button>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -302,10 +385,49 @@ textarea { resize: vertical; min-height: 60px; }
   <div class="scanner-video-wrap">
     <video id="scanner-video" muted playsinline autoplay></video>
     <div class="scanner-frame" id="scanner-frame"></div>
+    <div id="scanner-bulk-badge" class="scanner-bulk-badge"></div>
+    <div id="scanner-toast" class="scanner-toast"></div>
   </div>
-  <div class="scanner-hint">Hold the book's back-cover barcode a few inches from the camera, inside the box.</div>
+  <div class="scanner-hint" id="scanner-hint">Hold the book's back-cover barcode a few inches from the camera, inside the box.</div>
   <div id="scanner-error" class="scanner-error"></div>
-  <button class="btn btn-ghost scanner-cancel" onclick="closeScanner()">Cancel</button>
+  <button class="btn btn-ghost scanner-cancel" id="scanner-cancel-btn" onclick="closeScanner()">Cancel</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2b · Bulk Scanning Home
+═══════════════════════════════════════════ -->
+<div id="s-bulk" class="screen">
+  <div class="screen-title">📦 Bulk Scanning</div>
+  <div class="screen-sub">Point the camera at each book's barcode. Every scan auto-saves — no need to stop between books.</div>
+
+  <div class="card accent" style="text-align:center;">
+    <div style="font-size:34px;font-weight:800;color:#7c3aed;line-height:1.2;" id="bulk-count">0</div>
+    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">books scanned this session</div>
+  </div>
+
+  <div class="card" id="bulk-last-card" style="display:none;">
+    <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;font-weight:600;">Last added</div>
+    <div id="bulk-last-title" class="book-title"></div>
+    <div id="bulk-last-meta" class="book-meta"></div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="openScanner({bulk:true})">📷 Resume Scanning</button>
+  <button class="btn btn-ghost btn-full" style="margin-top:10px;" onclick="finishBulk()">Finish Bulk Session →</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2c · Review Imported Books
+═══════════════════════════════════════════ -->
+<div id="s-review" class="screen">
+  <div class="screen-title">📥 Imported Books</div>
+  <div class="screen-sub">Review and complete each entry, then finish to copy everything into your sheet.</div>
+
+  <div class="card">
+    <div id="review-list"></div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="show('s-done'); showDone();">Looks good, finish →</button>
+  <button class="btn btn-ghost btn-full" style="margin-top:10px;" onclick="goSetup()">+ Import More / Back to Setup</button>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -655,7 +777,7 @@ textarea { resize: vertical; min-height: 60px; }
   </div>
 
   <div class="btn-row">
-    <button class="btn btn-ghost" onclick="backToISBN()">← Back</button>
+    <button class="btn btn-ghost" onclick="cancelOrBack()">← Back</button>
     <div class="spacer"></div>
     <button class="btn btn-primary" id="next-btn" onclick="saveBook()">Next →</button>
   </div>
@@ -689,6 +811,16 @@ textarea { resize: vertical; min-height: 60px; }
     <div id="copy-confirm" class="copy-confirm">✓ Copied! Go paste into the New Books tab.</div>
   </div>
 
+  <div class="card">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Continue on Another Device</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:14px;line-height:1.5;">
+      Scanning on your phone? Share this session as a file (AirDrop, Drive, Messages, email — whatever's easiest),
+      then open this page on your computer and import it from the setup screen.
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="exportSession()">📤 Share / Save Session File</button>
+    <div id="export-confirm" class="copy-confirm"></div>
+  </div>
+
   <button class="btn btn-ghost btn-full" onclick="newSession()" style="margin-top:4px;">
     + Start New Session
   </button>
@@ -701,50 +833,88 @@ textarea { resize: vertical; min-height: 60px; }
 // misreads from other stray codes in frame (price stickers, etc).
 let zxingReader = null;
 let scannerActive = false;
+let scannerBulk = false;
+let lastScanCode = null;
+let lastScanAt = 0;
 
 function scannerSupported() {
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.ZXing);
 }
 
-async function openScanner() {
+// opts.bulk: true keeps the camera open and auto-saves every decode instead
+// of closing on the first hit — used by Bulk Scan Mode to blast through a
+// stack of books without stopping between each one.
+async function openScanner(opts) {
+  opts = opts || {};
+  scannerBulk = !!opts.bulk;
+  lastScanCode = null;
+  lastScanAt = 0;
+
   const overlay = document.getElementById('scanner-overlay');
   const errEl = document.getElementById('scanner-error');
+  const badge = document.getElementById('scanner-bulk-badge');
+  const toast = document.getElementById('scanner-toast');
+  const cancelBtn = document.getElementById('scanner-cancel-btn');
+  const hint = document.getElementById('scanner-hint');
+
   errEl.textContent = '';
   document.getElementById('scanner-frame').classList.remove('found');
+  if (toast) { toast.style.display = 'none'; toast.textContent = ''; toast.classList.remove('warn'); }
+  if (badge) {
+    badge.style.display = scannerBulk ? 'block' : 'none';
+    badge.textContent = `${ST.books.length} scanned`;
+  }
+  if (cancelBtn) cancelBtn.textContent = scannerBulk ? 'Done Scanning' : 'Cancel';
+  if (hint) hint.textContent = scannerBulk
+    ? 'Scan each barcode in turn — it auto-saves and the camera stays open for the next one.'
+    : 'Hold the book\'s back-cover barcode a few inches from the camera, inside the box.';
+
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  scannerActive = true;
 
   if (!scannerSupported()) {
     errEl.textContent = 'Camera scanning isn\'t available in this browser — enter the ISBN manually instead.';
-    overlay.classList.add('show');
     return;
   }
-
-  overlay.classList.add('show');
-  scannerActive = true;
 
   try {
     if (!zxingReader) {
       const hints = new Map();
       hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13]);
       zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+    } else {
+      try { zxingReader.reset(); } catch (e) { /* already stopped */ }
     }
 
-    const devices = await zxingReader.listVideoInputDevices();
-    if (!devices.length) throw new Error('No camera found');
-    // Prefer a rear/back/environment-facing camera when one is labeled (phones);
-    // MacBooks etc. will just have the one built-in camera.
-    const preferred = devices.find(d => /back|rear|environment/i.test(d.label));
-    const deviceId = (preferred || devices[0]).deviceId;
+    // Ask directly for the rear/environment camera via constraints rather
+    // than enumerating devices and matching on label — device labels come
+    // back blank until permission is already granted, so label-matching
+    // silently fails on a phone's very first scan.
+    const constraints = { video: { facingMode: { ideal: 'environment' } } };
 
-    zxingReader.decodeFromVideoDevice(deviceId, 'scanner-video', (result, err) => {
+    zxingReader.decodeFromConstraints(constraints, 'scanner-video', (result, err) => {
       if (!scannerActive) return;
       if (result) {
         const text = result.getText().replace(/[-\s]/g, '');
-        document.getElementById('scanner-frame').classList.add('found');
-        document.getElementById('isbn-val').value = text;
-        setTimeout(() => {
-          closeScanner();
-          doLookup();
-        }, 200);
+        const now = Date.now();
+        if (text === lastScanCode && now - lastScanAt < 4000) return; // debounce re-reads of the same code
+        lastScanCode = text;
+        lastScanAt = now;
+
+        const frame = document.getElementById('scanner-frame');
+        frame.classList.add('found');
+        setTimeout(() => frame.classList.remove('found'), 500);
+
+        if (scannerBulk) {
+          handleBulkScan(text);
+        } else {
+          document.getElementById('isbn-val').value = text;
+          setTimeout(() => {
+            closeScanner();
+            doLookup();
+          }, 200);
+        }
       }
       // NotFoundException fires continuously between frames while no code is
       // in view — that's normal scanning noise, not a real error.
@@ -759,18 +929,28 @@ async function openScanner() {
 function closeScanner() {
   scannerActive = false;
   document.getElementById('scanner-overlay').classList.remove('show');
+  document.body.style.overflow = '';
   if (zxingReader) {
     try { zxingReader.reset(); } catch (e) { /* already stopped */ }
+  }
+  if (scannerBulk) {
+    updateBulkScreen();
+    show('s-bulk');
   }
 }
 
 // ─── State ───────────────────────────────────────────────
+// ST.books holds field objects (not pre-baked rows) so an entry can be
+// re-opened for editing later — the TSV row is only built at copy/export
+// time via fieldsToRow().
 const ST = {
   n: 1,
   current: 1,
   session: {},
   books: [],
-  skipped: false
+  bulk: false,
+  editingIndex: null,
+  returnScreen: null
 };
 
 // ─── Autosave (survives an accidental tab close / crash) ──
@@ -779,7 +959,7 @@ const STORAGE_KEY = 'bookLoggerSession_v1';
 function persistState() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      n: ST.n, current: ST.current, session: ST.session, books: ST.books
+      n: ST.n, current: ST.current, session: ST.session, books: ST.books, bulk: ST.bulk
     }));
   } catch(e) { /* storage unavailable — not fatal */ }
 }
@@ -792,10 +972,10 @@ function checkForSavedSession() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) {}
   if (saved && Array.isArray(saved.books) && saved.books.length > 0) {
-    const remaining = Math.max(0, (saved.n || saved.books.length) - saved.books.length);
+    const remaining = (!saved.bulk && saved.n) ? Math.max(0, saved.n - saved.books.length) : 0;
     document.getElementById('resume-detail').textContent =
       `${saved.books.length} book${saved.books.length !== 1 ? 's' : ''} already logged` +
-      (remaining ? `, ${remaining} left in that batch.` : ' in that batch.');
+      (saved.bulk ? ' (bulk session).' : (remaining ? `, ${remaining} left in that batch.` : ' in that batch.'));
     document.getElementById('resume-banner').style.display = 'block';
     ST._pendingResume = saved;
   }
@@ -808,11 +988,20 @@ function resumeSession() {
     n: saved.n || saved.books.length,
     current: saved.books.length + 1,
     session: saved.session || {},
-    books: saved.books || []
+    books: saved.books || [],
+    bulk: !!saved.bulk,
+    editingIndex: null,
+    returnScreen: null
   });
   document.getElementById('resume-banner').style.display = 'none';
-  if (ST.current > ST.n) { showDone(); }
-  else { clearISBN(); show('s-isbn'); updateProgress(); }
+  if (ST.bulk) {
+    show('s-bulk');
+    updateBulkScreen();
+  } else if (ST.current > ST.n) {
+    showDone();
+  } else {
+    clearISBN(); show('s-isbn'); updateProgress();
+  }
 }
 
 function discardSession() {
@@ -829,6 +1018,30 @@ function show(id) {
 
 function goSetup() { show('s-setup'); }
 function backToISBN() { show('s-isbn'); }
+
+// Cancels an in-progress edit (from Done/Review) without saving, or falls
+// back to the normal ISBN-screen back button when not editing.
+function cancelOrBack() {
+  if (ST.editingIndex != null) {
+    const returnTo = ST.returnScreen || 's-done';
+    ST.editingIndex = null;
+    ST.returnScreen = null;
+    resetDetailsScreenChrome();
+    if (returnTo === 's-review') { show('s-review'); renderReview(); }
+    else { show('s-done'); showDone(); }
+  } else {
+    backToISBN();
+  }
+}
+
+function resetDetailsScreenChrome() {
+  const pw = document.querySelector('#s-details .progress-wrap');
+  if (pw) pw.style.display = '';
+  const nb = document.getElementById('next-btn');
+  if (nb) nb.textContent = (ST.current === ST.n) ? 'Finish ✓' : 'Next →';
+  const heading = document.getElementById('det-heading');
+  if (heading) heading.textContent = `Book ${ST.current} of ${ST.n}`;
+}
 
 // ─── Progress helpers ─────────────────────────────────────
 function updateProgress() {
@@ -850,18 +1063,105 @@ function updateProgress() {
 
 // ─── Session Setup ────────────────────────────────────────
 function startSession() {
-  ST.n = Math.max(1, parseInt(document.getElementById('s-count').value) || 1);
-  ST.current = 1;
   ST.books = [];
+  ST.editingIndex = null;
+  ST.returnScreen = null;
   ST.session = {
     source: document.getElementById('s-source').value.trim(),
     date:   document.getElementById('s-date').value,
     publisher: document.getElementById('s-publisher').value.trim()
   };
+
+  const bulkOn = document.getElementById('s-bulk-toggle').checked;
+  if (bulkOn) {
+    ST.bulk = true;
+    ST.n = 0;
+    ST.current = 0;
+    persistState();
+    show('s-bulk');
+    updateBulkScreen();
+    openScanner({ bulk: true });
+  } else {
+    ST.bulk = false;
+    ST.n = Math.max(1, parseInt(document.getElementById('s-count').value) || 1);
+    ST.current = 1;
+    persistState();
+    clearISBN();
+    show('s-isbn');
+    updateProgress();
+  }
+}
+
+// ─── Bulk Scan Mode ───────────────────────────────────────
+function updateBulkScreen() {
+  const countEl = document.getElementById('bulk-count');
+  if (countEl) countEl.textContent = ST.books.length;
+
+  const lastCard = document.getElementById('bulk-last-card');
+  const last = ST.books[ST.books.length - 1];
+  if (lastCard) {
+    if (last) {
+      lastCard.style.display = '';
+      document.getElementById('bulk-last-title').innerHTML =
+        escapeHtml(last.title) || `ISBN ${escapeHtml(last.isbn || '?')}`;
+      if (last.needsReview) {
+        document.getElementById('bulk-last-title').innerHTML += ' <span class="badge-warn">needs review</span>';
+      }
+      document.getElementById('bulk-last-meta').textContent =
+        [last.authors, last.genre].filter(Boolean).join(' · ') || (last.needsReview ? 'Not found — fill in manually later' : '');
+    } else {
+      lastCard.style.display = 'none';
+    }
+  }
+}
+
+async function handleBulkScan(raw) {
+  showScannerToast(`Looking up ${raw}…`);
+  const result = await lookupIsbn(raw);
+
+  const fields = {
+    isbn: raw,
+    title: result?.title || '',
+    authors: result?.authors || '',
+    illustrators: '',
+    genre: result?.genre || '',
+    subgenre: result?.subgenre || '',
+    status: 'Unread',
+    publisher: result?.publisher || ST.session.publisher || '',
+    published: result ? parsePublishedDate(result.published) : '',
+    pages: result?.pages || '',
+    notes: '',
+    source: ST.session.source || '',
+    purchaseDate: ST.session.date || '',
+    value: '',
+    needsReview: !result
+  };
+
+  ST.books.push(fields);
   persistState();
-  clearISBN();
-  show('s-isbn');
-  updateProgress();
+
+  const badge = document.getElementById('scanner-bulk-badge');
+  if (badge) badge.textContent = `${ST.books.length} scanned`;
+
+  if (result) {
+    showScannerToast(`✓ ${fields.title || raw}`);
+  } else {
+    showScannerToast(`⚠ ${raw} not found — added for review`, true);
+  }
+}
+
+function showScannerToast(msg, warn) {
+  const el = document.getElementById('scanner-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.classList.toggle('warn', !!warn);
+}
+
+function finishBulk() {
+  ST.bulk = false;
+  show('s-done');
+  showDone();
 }
 
 // ─── ISBN Screen ──────────────────────────────────────────
@@ -1029,14 +1329,10 @@ function pickField(...vals) {
   return '';
 }
 
-async function doLookup() {
-  const raw = document.getElementById('isbn-val').value.trim().replace(/[-\s]/g, '');
-  if (!raw) { statusMsg('isbn-status', 'Enter an ISBN first.', 'error'); return; }
-
-  const btn = document.getElementById('lookup-btn');
-  btn.disabled = true;
-  statusMsg('isbn-status', 'Looking up…', 'loading');
-
+// Shared by the single-scan flow (doLookup) and Bulk Scan Mode
+// (handleBulkScan) — queries every source in parallel and merges the best
+// field from each. Returns null when nothing came back.
+async function lookupIsbn(raw) {
   const [g, ol, ols, oli] = await Promise.all([
     fetchGoogleBooks(raw),
     fetchOpenLibraryData(raw),
@@ -1045,12 +1341,7 @@ async function doLookup() {
   ]);
 
   const hits = [g, ol, ols, oli].filter(Boolean);
-
-  if (!hits.length) {
-    statusMsg('isbn-status', 'Not found in Google Books or Open Library — enter details manually.', 'error');
-    setTimeout(() => { prefillDetails({ isbn: raw }); show('s-details'); updateProgress(); btn.disabled = false; }, 1200);
-    return;
-  }
+  if (!hits.length) return null;
 
   // Field-by-field merge — a source that's blank/wrong for one field doesn't
   // block a good value from another source for a different field.
@@ -1062,8 +1353,27 @@ async function doLookup() {
   const subjects  = [...(g?.subjects||[]), ...(ol?.subjects||[]), ...(ols?.subjects||[]), ...(oli?.subjects||[])];
   const { genre, subgenre } = suggestGenreSubgenre(subjects);
 
-  prefillDetails({ title, authors, illustrators: '', isbn: raw, publisher, published, pages, genre, subgenre });
-  statusMsg('isbn-status', `✓ Found (${hits.length} source${hits.length > 1 ? 's' : ''})`, 'ok');
+  return { title, authors, publisher, published, pages, genre, subgenre, hitCount: hits.length };
+}
+
+async function doLookup() {
+  const raw = document.getElementById('isbn-val').value.trim().replace(/[-\s]/g, '');
+  if (!raw) { statusMsg('isbn-status', 'Enter an ISBN first.', 'error'); return; }
+
+  const btn = document.getElementById('lookup-btn');
+  btn.disabled = true;
+  statusMsg('isbn-status', 'Looking up…', 'loading');
+
+  const result = await lookupIsbn(raw);
+
+  if (!result) {
+    statusMsg('isbn-status', 'Not found in Google Books or Open Library — enter details manually.', 'error');
+    setTimeout(() => { prefillDetails({ isbn: raw }); show('s-details'); updateProgress(); btn.disabled = false; }, 1200);
+    return;
+  }
+
+  prefillDetails({ ...result, illustrators: '', isbn: raw });
+  statusMsg('isbn-status', `✓ Found (${result.hitCount} source${result.hitCount > 1 ? 's' : ''})`, 'ok');
   setTimeout(() => { show('s-details'); updateProgress(); btn.disabled = false; }, 300);
 }
 
@@ -1145,30 +1455,57 @@ function fmtDate(input) {
   return s;
 }
 
+// ─── Small helpers ─────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+// Builds the TSV row for one book from its stored fields object.
+// Formatting (dates, value) is applied here, at row-build time, so it's
+// identical whether the fields came from the manual form or a bulk scan.
+function fieldsToRow(f) {
+  const fmtValue = f.value ? parseFloat(f.value).toFixed(2) : '';
+  // A       B      C        D   E        F           G        H   I   J           K                    L        M         N         O               P          Q        R
+  return [f.isbn || '', f.title || '', f.authors || '', '', f.genre || '', f.subgenre || '', f.status || 'Unread', '', '', f.publisher || '', fmtDate(f.published), f.pages || '', f.notes || '', f.source || '', fmtDate(f.purchaseDate), fmtValue, f.authors || '', f.illustrators || ''];
+}
+
 // ─── Save Book & Advance ──────────────────────────────────
 function saveBook() {
   const g = id => document.getElementById(id).value.trim();
 
-  const isbn        = g('d-isbn');
-  const title       = g('d-title');
-  const authors     = g('d-authors');
-  const illustrators = g('d-illustrators');
-  const genre       = g('d-genre');
-  const subgenre    = g('d-subgenre');
-  const status      = document.getElementById('d-status').value;
-  const publisher   = g('d-publisher');
-  const published   = fmtDate(document.getElementById('d-published').value);
-  const pages       = g('d-pages');
-  const notes       = g('d-notes');
-  const source      = g('d-source');
-  const purchaseDate = fmtDate(document.getElementById('d-date').value);
-  const value       = g('d-value');
-  const fmtValue    = value ? parseFloat(value).toFixed(2) : '';
+  const fields = {
+    isbn:         g('d-isbn'),
+    title:        g('d-title'),
+    authors:      g('d-authors'),
+    illustrators: g('d-illustrators'),
+    genre:        g('d-genre'),
+    subgenre:     g('d-subgenre'),
+    status:       document.getElementById('d-status').value,
+    publisher:    g('d-publisher'),
+    published:    document.getElementById('d-published').value.trim(),
+    pages:        g('d-pages'),
+    notes:        g('d-notes'),
+    source:       g('d-source'),
+    purchaseDate: document.getElementById('d-date').value,
+    value:        g('d-value'),
+    needsReview:  false
+  };
 
-  // A    B      C        D   E      F          G       H   I   J          K          L      M      N       O             P          Q        R
-  const row = [isbn, title, authors, '', genre, subgenre, status, '', '', publisher, published, pages, notes, source, purchaseDate, fmtValue, authors, illustrators];
+  if (ST.editingIndex != null) {
+    ST.books[ST.editingIndex] = fields;
+    const returnTo = ST.returnScreen || 's-done';
+    ST.editingIndex = null;
+    ST.returnScreen = null;
+    persistState();
+    resetDetailsScreenChrome();
+    if (returnTo === 's-review') { show('s-review'); renderReview(); }
+    else { show('s-done'); showDone(); }
+    return;
+  }
 
-  ST.books.push({ title, authors, genre, row });
+  ST.books.push(fields);
   persistState();
 
   if (ST.current < ST.n) {
@@ -1181,37 +1518,189 @@ function saveBook() {
   }
 }
 
+// Opens the Details screen pre-filled with a previously logged book, so it
+// can be corrected in place (used from the Done and Review screens).
+function editBook(index, returnScreen) {
+  const b = ST.books[index];
+  if (!b) return;
+  ST.editingIndex = index;
+  ST.returnScreen = returnScreen;
+
+  prefillDetails(b);
+  // Fields prefillDetails doesn't cover (or that need the raw, unformatted
+  // value rather than a display-formatted one) are set directly.
+  document.getElementById('d-status').value = b.status || 'Unread';
+  document.getElementById('d-source').value = b.source || '';
+  document.getElementById('d-date').value = b.purchaseDate || '';
+  document.getElementById('d-value').value = b.value || '';
+  document.getElementById('d-notes').value = b.notes || '';
+  document.getElementById('d-published').value = b.published || '';
+
+  const pw = document.querySelector('#s-details .progress-wrap');
+  if (pw) pw.style.display = 'none';
+  const nb = document.getElementById('next-btn');
+  if (nb) nb.textContent = 'Save →';
+  const heading = document.getElementById('det-heading');
+  if (heading) heading.textContent = 'Edit Book';
+  show('s-details');
+}
+
+function bookRowHtml(b, i, returnScreen) {
+  return `
+    <div class="book-row">
+      <div class="book-num">${i + 1}</div>
+      <div style="flex:1;">
+        <div class="book-title">${escapeHtml(b.title) || '(no title)'}${b.needsReview ? ' <span class="badge-warn">needs review</span>' : ''}</div>
+        <div class="book-meta">${escapeHtml(b.authors)}${b.genre ? ' · ' + escapeHtml(b.genre) : ''}</div>
+      </div>
+      <button class="btn btn-ghost review-row-btn" onclick="editBook(${i}, '${returnScreen}')">Edit</button>
+    </div>`;
+}
+
+// ─── Review Screen (imported books) ────────────────────────
+function renderReview() {
+  document.getElementById('review-list').innerHTML =
+    ST.books.map((b, i) => bookRowHtml(b, i, 's-review')).join('');
+}
+
 // ─── Done Screen ──────────────────────────────────────────
 function showDone() {
   const n = ST.books.length;
+  const needingReview = ST.books.filter(b => b.needsReview).length;
   document.getElementById('done-sub').textContent =
-    `${n} book${n !== 1 ? 's' : ''} logged this session.`;
+    `${n} book${n !== 1 ? 's' : ''} logged this session.` +
+    (needingReview ? ` ${needingReview} need${needingReview !== 1 ? '' : 's'} review.` : '');
 
-  document.getElementById('book-list').innerHTML = ST.books.map((b, i) => `
-    <div class="book-row">
-      <div class="book-num">${i + 1}</div>
-      <div>
-        <div class="book-title">${b.title || '(no title)'}</div>
-        <div class="book-meta">${b.authors}${b.genre ? ' · ' + b.genre : ''}</div>
-      </div>
-    </div>
-  `).join('');
+  document.getElementById('book-list').innerHTML =
+    ST.books.map((b, i) => bookRowHtml(b, i, 's-done')).join('');
 
   document.getElementById('copy-confirm').classList.remove('show');
   show('s-done');
 }
 
 function copyAll() {
-  const tsv = ST.books.map(b => b.row.join('\t')).join('\n');
+  const tsv = ST.books.map(b => fieldsToRow(b).join('\t')).join('\n');
   navigator.clipboard.writeText(tsv)
     .then(() => document.getElementById('copy-confirm').classList.add('show'))
     .catch(() => prompt('Copy this and paste into your sheet:', tsv));
 }
 
 function newSession() {
-  Object.assign(ST, { n: 1, current: 1, books: [], session: {} });
+  Object.assign(ST, { n: 1, current: 1, books: [], session: {}, bulk: false, editingIndex: null, returnScreen: null });
   clearPersisted();
+  const bulkToggle = document.getElementById('s-bulk-toggle');
+  if (bulkToggle) bulkToggle.checked = false;
+  const countField = document.getElementById('s-count-field');
+  if (countField) countField.style.display = '';
   show('s-setup');
+}
+
+// ─── Cross-device session export / import ──────────────────
+function exportSession() {
+  const data = { version: 1, exportedAt: new Date().toISOString(), session: ST.session, books: ST.books };
+  const json = JSON.stringify(data, null, 2);
+  const filename = `book-session-${new Date().toISOString().slice(0, 10)}-${ST.books.length}books.json`;
+  const blob = new Blob([json], { type: 'application/json' });
+  const confirmEl = document.getElementById('export-confirm');
+
+  async function tryShare() {
+    if (!(navigator.share && navigator.canShare)) return false;
+    try {
+      const file = new File([blob], filename, { type: 'application/json' });
+      if (!navigator.canShare({ files: [file] })) return false;
+      await navigator.share({ files: [file], title: 'Book session', text: `${ST.books.length} books scanned` });
+      return true;
+    } catch (e) {
+      // User cancelling the share sheet shouldn't trigger a download fallback.
+      return e && e.name === 'AbortError';
+    }
+  }
+
+  tryShare().then(shared => {
+    if (!shared) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+    if (confirmEl) {
+      confirmEl.textContent = '✓ Session file saved — open it on your other device to import.';
+      confirmEl.classList.add('show');
+      setTimeout(() => confirmEl.classList.remove('show'), 4000);
+    }
+  });
+}
+
+function normalizeImportedBook(b) {
+  b = b || {};
+  return {
+    isbn:         b.isbn || '',
+    title:        b.title || '',
+    authors:      b.authors || '',
+    illustrators: b.illustrators || '',
+    genre:        b.genre || '',
+    subgenre:     b.subgenre || '',
+    status:       b.status || 'Unread',
+    publisher:    b.publisher || '',
+    published:    b.published || '',
+    pages:        b.pages || '',
+    notes:        b.notes || '',
+    source:       b.source || '',
+    purchaseDate: b.purchaseDate || '',
+    value:        b.value || '',
+    needsReview:  !!b.needsReview
+  };
+}
+
+function handleImportFiles(fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  let pending = files.length;
+  let importedCount = 0;
+  const errors = [];
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const books = Array.isArray(data.books) ? data.books : [];
+        books.forEach(b => ST.books.push(normalizeImportedBook(b)));
+        importedCount += books.length;
+        if (data.session && (!ST.session || Object.keys(ST.session).length === 0)) {
+          ST.session = data.session;
+        }
+      } catch (e) {
+        errors.push(file.name);
+      }
+      if (--pending === 0) finishImport();
+    };
+    reader.onerror = () => {
+      errors.push(file.name);
+      if (--pending === 0) finishImport();
+    };
+    reader.readAsText(file);
+  });
+
+  function finishImport() {
+    ST.bulk = false;
+    ST.editingIndex = null;
+    ST.returnScreen = null;
+    persistState();
+    const input = document.getElementById('import-file-input');
+    if (input) input.value = '';
+    if (errors.length) {
+      alert(`Couldn't read: ${errors.join(', ')}. Anything else imported OK.`);
+    }
+    if (importedCount > 0) {
+      show('s-review');
+      renderReview();
+    }
+  }
 }
 
 // ─── Live library data ────────────────────────────────────
@@ -1339,6 +1828,15 @@ async function loadLibraryData() {
 document.getElementById('s-date').value = new Date().toISOString().slice(0, 10);
 loadLibraryData();
 checkForSavedSession();
+
+(function initBulkToggle() {
+  const toggle = document.getElementById('s-bulk-toggle');
+  const countField = document.getElementById('s-count-field');
+  if (!toggle || !countField) return;
+  toggle.addEventListener('change', () => {
+    countField.style.display = toggle.checked ? 'none' : '';
+  });
+})();
 </script>
 </body>
 </html>
