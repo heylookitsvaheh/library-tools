@@ -121,6 +121,8 @@ textarea { resize: vertical; min-height: 60px; }
 .btn-ghost:hover { background: #e5e7eb; }
 .btn-green { background: #059669; color: white; }
 .btn-green:hover { background: #047857; }
+.btn-danger { background: #fee2e2; color: #b91c1c; }
+.btn-danger:hover { background: #fecaca; }
 .btn-full { width: 100%; }
 
 .btn-row {
@@ -1557,7 +1559,25 @@ function bookRowHtml(b, i, returnScreen) {
         <div class="book-meta">${escapeHtml(b.authors)}${b.genre ? ' · ' + escapeHtml(b.genre) : ''}</div>
       </div>
       <button class="btn btn-ghost review-row-btn" onclick="editBook(${i}, '${returnScreen}')">Edit</button>
+      <button class="btn btn-danger review-row-btn" onclick="deleteBook(${i}, '${returnScreen}')">Delete</button>
     </div>`;
+}
+
+// Removes a logged book (used to correct mis-scans or duplicate scans) after
+// a confirm prompt, then re-renders whichever list screen it was deleted from.
+function deleteBook(index, returnScreen) {
+  const b = ST.books[index];
+  if (!b) return;
+  const label = b.title || (b.isbn ? `ISBN ${b.isbn}` : 'this entry');
+  if (!confirm(`Delete "${label}"? This can't be undone.`)) return;
+
+  ST.books.splice(index, 1);
+  if (ST.editingIndex === index) { ST.editingIndex = null; ST.returnScreen = null; }
+  else if (ST.editingIndex != null && ST.editingIndex > index) { ST.editingIndex--; }
+  persistState();
+
+  if (returnScreen === 's-review') renderReview();
+  else showDone();
 }
 
 // ─── Review Screen (imported books) ────────────────────────
