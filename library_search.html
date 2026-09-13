@@ -2,17 +2,25 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Library Search</title>
 <style>
 :root { color-scheme: light; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #f5f4f1;
   color: #111;
   padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  padding-left: max(24px, env(safe-area-inset-left));
+  padding-right: max(24px, env(safe-area-inset-right));
   min-height: 100vh;
+  min-height: 100dvh;
 }
 .wrap { max-width: 960px; margin: 0 auto; }
 
@@ -230,7 +238,293 @@ tbody tr:last-child td { border-bottom: none; }
   padding: 18px 2px;
   text-align: center;
 }
+
+/* ══════════════════ Add Books tab (scoped) ══════════════════ */
+
+/* Screens */
+#tab-panel-add .screen{ display: none; }
+#tab-panel-add .screen.active{ display: block; animation: fade-in 0.18s ease; }
+
+@keyframes fade-in { from { opacity: 0; transform: translateY(6px); }
+ to { opacity: 1; transform: none; }
+ }
+
+
+/* Progress */
+#tab-panel-add .progress-wrap{ margin-bottom: 20px; }
+#tab-panel-add .progress-label{ font-size: 12px; color: #9ca3af; margin-bottom: 6px; font-weight: 500; }
+#tab-panel-add .progress-track{ height: 4px; background: #e5e7eb; border-radius: 2px; }
+#tab-panel-add .progress-fill{ height: 4px; background: #7c3aed; border-radius: 2px; transition: width 0.35s ease; }
+
+
+/* Cards */
+#tab-panel-add .card{
+  background: white;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+}
+#tab-panel-add .card.accent{
+  background: #faf5ff;
+  border: 1.5px solid #e9d5ff;
+}
+
+
+/* Typography */
+#tab-panel-add .screen-title{ font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+#tab-panel-add .screen-sub{ font-size: 13px; color: #6b7280; margin-bottom: 20px; line-height: 1.4; }
+
+
+/* Form fields */
+#tab-panel-add .field{ margin-bottom: 14px; }
+#tab-panel-add .field:last-child{ margin-bottom: 0; }
+#tab-panel-add .field label{
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 5px;
+}
+#tab-panel-add .field label .hint{ font-weight: 400; text-transform: none; letter-spacing: 0; color: #c4b5fd; }
+
+
+#tab-panel-add input[type=text], #tab-panel-add input[type=number], #tab-panel-add input[type=date], #tab-panel-add select, #tab-panel-add textarea{
+  width: 100%;
+  padding: 12px 13px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 9px;
+  font-size: 16px;
+  font-family: inherit;
+  color: #111;
+  background: white;
+  outline: none;
+  transition: border-color 0.12s;
+}
+#tab-panel-add input:focus, #tab-panel-add select:focus, #tab-panel-add textarea:focus{ border-color: #7c3aed; }
+#tab-panel-add textarea{ resize: vertical; min-height: 60px; }
+
+
+#tab-panel-add .grid-2{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#tab-panel-add .span-2{ grid-column: 1 / -1; }
+
+
+/* ISBN big input */
+#tab-panel-add .isbn-input{
+  font-size: 22px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  width: 100%;
+  text-align: center;
+  letter-spacing: 1px;
+  font-family: 'Courier New', monospace;
+  outline: none;
+  transition: border-color 0.12s;
+}
+#tab-panel-add .isbn-input:focus{ border-color: #7c3aed; }
+
+
+/* Buttons */
+#tab-panel-add .btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 11px 20px;
+  min-height: 44px;
+  border: none;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+#tab-panel-add .btn-primary{ background: #7c3aed; color: white; }
+#tab-panel-add .btn-primary:hover{ background: #6d28d9; }
+#tab-panel-add .btn-ghost{ background: #f3f4f6; color: #374151; }
+#tab-panel-add .btn-ghost:hover{ background: #e5e7eb; }
+#tab-panel-add .btn-green{ background: #059669; color: white; }
+#tab-panel-add .btn-green:hover{ background: #047857; }
+#tab-panel-add .btn-danger{ background: #fee2e2; color: #b91c1c; }
+#tab-panel-add .btn-danger:hover{ background: #fecaca; }
+#tab-panel-add .btn-full{ width: 100%; }
+
+
+#tab-panel-add .btn-row{
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+#tab-panel-add .spacer{ flex: 1; }
+
+
+/* Status messages */
+#tab-panel-add .status{ font-size: 13px; margin-top: 10px; min-height: 20px; line-height: 1.4; }
+#tab-panel-add .status.loading{ color: #7c3aed; }
+#tab-panel-add .status.error{ color: #dc2626; }
+#tab-panel-add .status.ok{ color: #059669; }
+
+
+/* Autofill flash */
+@keyframes autofill {
+  0%   { background: #ede9fe; border-color: #a78bfa; }
+
+  100% { background: white;   border-color: #e5e7eb; }
+
+}
+#tab-panel-add .flashed{ animation: autofill 1.6s ease forwards; }
+
+
+/* Done screen */
+#tab-panel-add .book-row{
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: flex-start;
+}
+#tab-panel-add .book-row:last-child{ border-bottom: none; }
+#tab-panel-add .book-num{
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: #ede9fe;
+  color: #7c3aed;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+#tab-panel-add .book-title{ font-weight: 600; font-size: 14px; }
+#tab-panel-add .book-meta{ font-size: 12px; color: #6b7280; margin-top: 2px; }
+
+
+/* Barcode scanner overlay */
+#tab-panel-add .scanner-overlay{
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(17,17,17,0.92);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 24px;
+}
+#tab-panel-add .scanner-overlay.show{ display: flex; }
+#tab-panel-add .scanner-video-wrap{
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+}
+#tab-panel-add .scanner-video-wrap video{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+#tab-panel-add .scanner-frame{
+  position: absolute;
+  top: 40%; left: 6%; right: 6%; bottom: 40%;
+  border: 2px solid #a78bfa;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1000px rgba(0,0,0,0.45);
+  pointer-events: none;
+  transition: border-color 0.15s;
+}
+#tab-panel-add .scanner-frame.found{ border-color: #34d399; }
+#tab-panel-add .scanner-bulk-badge{
+  position: absolute;
+  top: 12px; right: 12px;
+  background: rgba(124,58,237,0.92);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 999px;
+  display: none;
+}
+#tab-panel-add .scanner-toast{
+  position: absolute;
+  left: 10px; right: 10px; bottom: 10px;
+  background: rgba(0,0,0,0.72);
+  color: #fff;
+  font-size: 13px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  text-align: center;
+  line-height: 1.4;
+  display: none;
+}
+#tab-panel-add .scanner-toast.warn{ background: rgba(220,38,38,0.85); }
+#tab-panel-add .scanner-hint{ color: #e5e7eb; font-size: 13px; margin-top: 16px; text-align: center; max-width: 440px; line-height: 1.5; }
+#tab-panel-add .scanner-error{ color: #fca5a5; font-size: 13px; margin-top: 8px; text-align: center; min-height: 18px; max-width: 440px; }
+#tab-panel-add .scanner-cancel{ margin-top: 16px; }
+#tab-panel-add .btn-scan{
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 10px;
+}
+
+
+/* Bulk mode toggle + status badges */
+#tab-panel-add .toggle-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+#tab-panel-add .toggle-row .toggle-text{ flex: 1; }
+#tab-panel-add .toggle-row .toggle-title{ font-size: 13px; font-weight: 600; color: #374151; text-transform: none; letter-spacing: 0; }
+#tab-panel-add .toggle-row .toggle-sub{ font-size: 12px; color: #9ca3af; margin-top: 2px; font-weight: 400; }
+#tab-panel-add .toggle-row input[type=checkbox]{ width: 24px; height: 24px; flex-shrink: 0; accent-color: #7c3aed; cursor: pointer; }
+
+
+#tab-panel-add .badge-warn{
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b45309;
+  background: #fef3c7;
+  padding: 2px 7px;
+  border-radius: 999px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+
+#tab-panel-add .review-row-btn{
+  padding: 6px 12px;
+  font-size: 12px;
+  min-height: 36px;
+  flex-shrink: 0;
+}
+
+
+#tab-panel-add .copy-confirm{ font-size: 13px; color: #059669; margin-top: 10px; display: none; }
+#tab-panel-add .copy-confirm.show{ display: block; }
+
+
+#tab-panel-add .sheet-link{
+  color: #7c3aed;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+#tab-panel-add .sheet-link:hover{ text-decoration: underline; }
+
+
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
 </head>
 <body>
 
@@ -243,6 +537,7 @@ tbody tr:last-child td { border-bottom: none; }
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-btn-lib" onclick="showTab('lib')">Library Search</button>
     <button class="tab-btn" id="tab-btn-col" onclick="showTab('col')">Collections Search</button>
+    <button class="tab-btn" id="tab-btn-add" onclick="showTab('add')">Add Books</button>
   </div>
 
   <!-- ═══════════════════ LIBRARY SEARCH TAB ═══════════════════ -->
@@ -336,6 +631,556 @@ tbody tr:last-child td { border-bottom: none; }
       </div>
     </div>
   </div>
+
+  <!-- ═══════════════════ ADD BOOKS TAB ═══════════════════ -->
+  <div class="tab-panel" id="tab-panel-add">
+
+<!-- ══════════════════════════════════════════
+     SCREEN 1 · Session Setup
+═══════════════════════════════════════════ -->
+<div id="s-setup" class="screen active">
+  <div class="screen-title">📚 New Session</div>
+  <div class="screen-sub">Set defaults that apply to all books you're adding today.</div>
+
+  <div id="resume-banner" class="card accent" style="display:none;">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Resume in-progress session?</div>
+    <div id="resume-detail" style="font-size:13px;color:#6b7280;margin-bottom:14px;line-height:1.5;"></div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="resumeSession()">Resume</button>
+      <button class="btn btn-ghost" onclick="discardSession()">Discard</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label class="toggle-row">
+        <span class="toggle-text">
+          <span class="toggle-title">⚡ Bulk Scan Mode</span>
+          <span class="toggle-sub">Scan a whole stack of books back-to-back — each one auto-saves, review details afterward.</span>
+        </span>
+        <input type="checkbox" id="s-bulk-toggle" />
+      </label>
+    </div>
+    <div class="field" id="s-count-field">
+      <label>How many books?</label>
+      <input type="number" id="s-count" min="1" max="200" value="1" />
+    </div>
+    <div class="field">
+      <label>Purchased From</label>
+      <input type="text" id="s-source" list="source-opts" placeholder="Amazon, Bookshop.org…" />
+      <datalist id="source-opts">
+        <option value="Amazon">
+        <option value="Bookshop.org">
+        <option value="Folio Society">
+        <option value="Tertulia">
+        <option value="Powell's Books">
+        <option value="Barnes & Noble">
+        <option value="Savers">
+        <option value="Waterstones">
+        <option value="Gift">
+        <option value="eBay">
+        <option value="ThriftBooks">
+        <option value="Local Bookstore">
+      </datalist>
+    </div>
+    <div class="field">
+      <label>Purchase Date</label>
+      <input type="date" id="s-date" />
+    </div>
+    <div class="field">
+      <label>Default Publisher <span class="hint">(optional — override per book)</span></label>
+      <input type="text" id="s-publisher" list="publisher-opts" placeholder="Leave blank to fill per book" autocomplete="off" />
+    </div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="startSession()">Start →</button>
+
+  <div class="card" style="margin-top:16px;">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Continue From Another Device</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:14px;line-height:1.5;">
+      Scanned a batch on your phone? Import the session file(s) you shared from it — one or several — to review and finish them here.
+    </div>
+    <input type="file" id="import-file-input" accept="application/json" multiple style="display:none;" onchange="handleImportFiles(this.files)" />
+    <button class="btn btn-ghost btn-full" onclick="document.getElementById('import-file-input').click()">📥 Import Session File(s)</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2 · ISBN Entry
+═══════════════════════════════════════════ -->
+<div id="s-isbn" class="screen">
+  <div class="progress-wrap">
+    <div class="progress-label" id="p-isbn-label">Book 1 of 1</div>
+    <div class="progress-track"><div class="progress-fill" id="p-isbn-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="screen-title">ISBN</div>
+  <div class="screen-sub">Scan or type the ISBN, then look it up — or skip to enter manually.</div>
+
+  <div class="card">
+    <input class="isbn-input" type="text" id="isbn-val" placeholder="978…" inputmode="numeric"
+      onkeydown="if(event.key==='Enter') doLookup()" autocomplete="off" />
+    <button class="btn btn-ghost btn-scan" onclick="openScanner()">📷 Scan Barcode</button>
+    <div id="isbn-status" class="status"></div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="goSetup()">← Back</button>
+    <div class="spacer"></div>
+    <button class="btn btn-ghost" onclick="skipToDetails()">Skip →</button>
+    <button class="btn btn-primary" id="lookup-btn" onclick="doLookup()">Look Up →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     Barcode Scanner Overlay
+═══════════════════════════════════════════ -->
+<div id="scanner-overlay" class="scanner-overlay">
+  <div class="scanner-video-wrap">
+    <video id="scanner-video" muted playsinline autoplay></video>
+    <div class="scanner-frame" id="scanner-frame"></div>
+    <div id="scanner-bulk-badge" class="scanner-bulk-badge"></div>
+    <div id="scanner-toast" class="scanner-toast"></div>
+  </div>
+  <div class="scanner-hint" id="scanner-hint">Hold the book's back-cover barcode a few inches from the camera, inside the box.</div>
+  <div id="scanner-error" class="scanner-error"></div>
+  <button class="btn btn-ghost scanner-cancel" id="scanner-cancel-btn" onclick="closeScanner()">Cancel</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2b · Bulk Scanning Home
+═══════════════════════════════════════════ -->
+<div id="s-bulk" class="screen">
+  <div class="screen-title">📦 Bulk Scanning</div>
+  <div class="screen-sub">Point the camera at each book's barcode. Every scan auto-saves — no need to stop between books.</div>
+
+  <div class="card accent" style="text-align:center;">
+    <div style="font-size:34px;font-weight:800;color:#7c3aed;line-height:1.2;" id="bulk-count">0</div>
+    <div style="font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">books scanned this session</div>
+  </div>
+
+  <div class="card" id="bulk-last-card" style="display:none;">
+    <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;font-weight:600;">Last added</div>
+    <div id="bulk-last-title" class="book-title"></div>
+    <div id="bulk-last-meta" class="book-meta"></div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="openScanner({bulk:true})">📷 Resume Scanning</button>
+  <button class="btn btn-ghost btn-full" style="margin-top:10px;" onclick="finishBulk()">Finish Bulk Session →</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 2c · Review Imported Books
+═══════════════════════════════════════════ -->
+<div id="s-review" class="screen">
+  <div class="screen-title">📥 Imported Books</div>
+  <div class="screen-sub">Review and complete each entry, then finish to copy everything into your sheet.</div>
+
+  <div class="card">
+    <div id="review-list"></div>
+  </div>
+
+  <button class="btn btn-primary btn-full" onclick="show('s-done'); showDone();">Looks good, finish →</button>
+  <button class="btn btn-ghost btn-full" style="margin-top:10px;" onclick="goSetup()">+ Import More / Back to Setup</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 3 · Book Details
+═══════════════════════════════════════════ -->
+<div id="s-details" class="screen">
+  <div class="progress-wrap">
+    <div class="progress-label" id="p-det-label">Book 1 of 1</div>
+    <div class="progress-track"><div class="progress-fill" id="p-det-bar" style="width:0%"></div></div>
+  </div>
+
+  <div class="screen-title" id="det-heading">Book Details</div>
+  <div class="screen-sub">Review auto-filled fields and complete the rest.</div>
+
+  <div class="card">
+    <div class="grid-2">
+      <div class="field span-2">
+        <label>Title</label>
+        <input type="text" id="d-title" list="title-opts" autocomplete="off" />
+        <datalist id="title-opts">
+          <option value="100 Things to Do in Nashville Before You Die">
+          <option value="2001: A Space Odyssey">
+          <option value="A Beautifully Foolish Endeavor">
+          <option value="A Man Called Ove">
+          <option value="A Short Stay in Hell">
+          <option value="Abyss">
+          <option value="An Absolutely Remarkable Thing">
+          <option value="An Encyclopedia of Tolkien">
+          <option value="Anxious People">
+          <option value="Ascension">
+          <option value="Babel">
+          <option value="Bad Monkey">
+          <option value="Batgirl, Vol. 01: Batgirl of Burnside">
+          <option value="Batgirl, Vol. 02: Family Business">
+          <option value="Batman: Dark Victory">
+          <option value="Beloved">
+          <option value="Between Two Fires">
+          <option value="Brave New World">
+          <option value="Brief Wondrous Life Of Oscar Wao, The">
+          <option value="Broken Earth Trilogy, Book 01: The Fifth Season, The">
+          <option value="Broken Earth Trilogy, Book 02: The Obelisk Gate, The">
+          <option value="Broken Earth Trilogy, Book 03: The Stone Sky, The">
+          <option value="Chain-Gang All Stars">
+          <option value="Dune">
+          <option value="Hitchhiker's Guide 001: The Hitchhiker's Guide to the Galaxy">
+          <option value="Hitchhiker's Guide 002: The Restaurant at the End of the Universe">
+          <option value="Hitchhiker's Guide 003: Life, the Universe and Everything">
+          <option value="Hitchhiker's Guide 004: So Long, and Thanks for All the Fish">
+          <option value="Hitchhiker's Guide 005: Mostly Harmless">
+          <option value="Scholomance, Book 01: A Deadly Education, The">
+          <option value="Scholomance, Book 02: The Last Graduate, The">
+          <option value="Scholomance, Book 03: The Golden Enclaves, The">
+          <option value="Discworld #01: The Colour of Magic">
+          <option value="Discworld #02: The Light Fantastic">
+          <option value="Discworld #03: Equal Rites">
+          <option value="Leave the World Behind">
+          <option value="Martyr!">
+          <option value="Mickey7">
+          <option value="Watership Down">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Author(s) <span class="hint">First Last</span></label>
+        <input type="text" id="d-authors" list="author-opts" placeholder="e.g. Naomi Novik" autocomplete="off" />
+        <datalist id="author-opts">
+          <option value="Aesop">
+          <option value="Andrew Sean Greer">
+          <option value="Arthur C. Clarke">
+          <option value="Becky Chambers">
+          <option value="Blake Crouch">
+          <option value="Bob Mortimer">
+          <option value="Brad Meltzer">
+          <option value="Brian Asman">
+          <option value="Brian K. Vaughan">
+          <option value="Brit Bennett">
+          <option value="Brothers Grimm">
+          <option value="Carl Hiaasen">
+          <option value="Caroline Blackwood">
+          <option value="Celeste Ng">
+          <option value="Charles Perrault">
+          <option value="Christopher Buehlman">
+          <option value="Christopher Moore">
+          <option value="Claire Keegan">
+          <option value="Cormac McCarthy">
+          <option value="Craig Davidson">
+          <option value="D. J. MacHale">
+          <option value="Dan Brown">
+          <option value="Daniel Kraus">
+          <option value="David Day">
+          <option value="Dean Koontz">
+          <option value="Dennis Lehane">
+          <option value="Douglas Adams">
+          <option value="Edgar Rice Burroughs">
+          <option value="Edith Hamilton">
+          <option value="Edward Ashton">
+          <option value="Ernest Hemingway">
+          <option value="F. Scott Fitzgerald">
+          <option value="Flannery O'Connor">
+          <option value="Frank Herbert">
+          <option value="Fredrik Backman">
+          <option value="George Orwell">
+          <option value="Grady Hendrix">
+          <option value="H. P. Lovecraft">
+          <option value="Hank Green">
+          <option value="Hans Christian Andersen">
+          <option value="Harper Lee">
+          <option value="Imbolo Mbue">
+          <option value="J. K. Rowling">
+          <option value="J. R. R. Tolkien">
+          <option value="James McBride">
+          <option value="James S. A. Corey">
+          <option value="Jaroslav Kalfar">
+          <option value="Jeph Loeb">
+          <option value="John Steinbeck">
+          <option value="Josh Malerman">
+          <option value="Joshua Ferris">
+          <option value="Junot Diaz">
+          <option value="Kaveh Akbar">
+          <option value="Kazuo Ishiguro">
+          <option value="Leigh Bardugo">
+          <option value="Liz Moore">
+          <option value="Lois Lowry">
+          <option value="Louise Erdrich">
+          <option value="Marc Acito">
+          <option value="Marisha Pessl">
+          <option value="Mark Haddon">
+          <option value="Mark Z. Danielewski">
+          <option value="Michael McDowell">
+          <option value="Mohsin Hamid">
+          <option value="N. K. Jemisin">
+          <option value="Nana Kwame Adjei-Brenyah">
+          <option value="Naomi Novik">
+          <option value="Narine Abgaryan">
+          <option value="Neil Gaiman">
+          <option value="Nicholas Binge">
+          <option value="Nicholas Eames">
+          <option value="Nick Cutter">
+          <option value="Patrick deWitt">
+          <option value="Paul Tremblay">
+          <option value="Percival Everett">
+          <option value="Philip K. Dick">
+          <option value="Poul Anderson">
+          <option value="R. F. Kuang">
+          <option value="Ray Bradbury">
+          <option value="Ray Nayler">
+          <option value="Richard Adams">
+          <option value="Richard Matheson">
+          <option value="Richard Osman">
+          <option value="Rick Riordan">
+          <option value="Robert Cormier">
+          <option value="Rumaan Alam">
+          <option value="S. E. Hinton">
+          <option value="Samantha Harvey">
+          <option value="Scott Hawkins">
+          <option value="Shirley Jackson">
+          <option value="Silvia Moreno-Garcia">
+          <option value="Solvej Balle">
+          <option value="Stephen King">
+          <option value="T. A. Barron">
+          <option value="Terry Pratchett">
+          <option value="Toni Morrison">
+          <option value="Truman Capote">
+          <option value="Ursula K. Le Guin">
+          <option value="William Golding">
+          <option value="William Peter Blatty">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Illustrator(s)</label>
+        <input type="text" id="d-illustrators" />
+      </div>
+      <div class="field">
+        <label>ISBN</label>
+        <input type="text" id="d-isbn" />
+      </div>
+      <div class="field">
+        <label>Publisher</label>
+        <input type="text" id="d-publisher" list="publisher-opts" autocomplete="off" />
+        <datalist id="publisher-opts">
+          <option value="Ace">
+          <option value="Aladdin">
+          <option value="Arcturus Publishing Ltd">
+          <option value="Back Bay Books">
+          <option value="Ballantine Books">
+          <option value="Barnes &amp; Noble">
+          <option value="Beacon Press">
+          <option value="Beehive Books">
+          <option value="Broadway">
+          <option value="Candlewick">
+          <option value="Center Street">
+          <option value="Century Press">
+          <option value="Crown">
+          <option value="DC Comics">
+          <option value="Dark Horse Comics">
+          <option value="Del Rey">
+          <option value="Dell Publishing">
+          <option value="Disney-Hyperion">
+          <option value="Doubleday">
+          <option value="Easton Press">
+          <option value="Ecco">
+          <option value="Ecco Press">
+          <option value="Farrar, Straus and Giroux">
+          <option value="Flatiron Books">
+          <option value="Folio Society">
+          <option value="Franklin Library">
+          <option value="Gallery UK">
+          <option value="Gollancz">
+          <option value="Grand Central Publishing">
+          <option value="Graywolf Press">
+          <option value="Grove Press">
+          <option value="HarperCollins">
+          <option value="Harper Collins">
+          <option value="Harper Perennial">
+          <option value="Harper Voyager">
+          <option value="Harvard Business Review Press">
+          <option value="Houghton Mifflin Harcourt">
+          <option value="Independently Published">
+          <option value="Keylight Books">
+          <option value="Macmillan">
+          <option value="Mariner Books">
+          <option value="McNally Editions">
+          <option value="Modern Library">
+          <option value="Mutated Media">
+          <option value="New Directions Publishing">
+          <option value="Oneworld Publications">
+          <option value="Orbit">
+          <option value="Orbit Gold Editions">
+          <option value="Orion">
+          <option value="Pantheon">
+          <option value="Penguin">
+          <option value="Penguin Classics">
+          <option value="Penguin Clothbound Classics">
+          <option value="Picador">
+          <option value="Puffin Classics">
+          <option value="Quirk Books">
+          <option value="Random House">
+          <option value="Riverhead Books">
+          <option value="Scribner">
+          <option value="Simon &amp; Schuster">
+          <option value="Solaris">
+          <option value="Suntup Press">
+          <option value="The Broken Binding">
+          <option value="Thomas &amp; Mercer">
+          <option value="Tor Books">
+          <option value="Tor Nightfire">
+          <option value="Tordotcom">
+          <option value="Valancourt Books">
+          <option value="Vertigo">
+          <option value="Vintage">
+          <option value="Vintage Contemporaries">
+          <option value="Voyager">
+          <option value="William Morrow">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Published <span class="hint">MM-DD-YYYY</span></label>
+        <input type="text" id="d-published" placeholder="MM-DD-YYYY" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Pages</label>
+        <input type="number" id="d-pages" min="0" />
+      </div>
+      <div class="field">
+        <label>Genre</label>
+        <input type="text" id="d-genre" list="genre-opts" autocomplete="off" />
+        <datalist id="genre-opts">
+          <option value="Fiction">
+          <option value="Non-Fiction">
+          <option value="Graphic Novel">
+          <option value="Philosophy">
+          <option value="Poetry">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Subgenre</label>
+        <input type="text" id="d-subgenre" list="subgenre-opts" autocomplete="off" />
+        <datalist id="subgenre-opts">
+          <option value="Bildungsroman">
+          <option value="Biography/Memoir">
+          <option value="Comedy/Satire">
+          <option value="Essays and Aphorisms">
+          <option value="Fantasy">
+          <option value="Historical Fiction">
+          <option value="Horror">
+          <option value="Leadership">
+          <option value="Literary Fiction">
+          <option value="Magical Realism">
+          <option value="Mystery/Thriller">
+          <option value="Mythology">
+          <option value="Poems">
+          <option value="Reference">
+          <option value="Romance">
+          <option value="Science Fiction">
+          <option value="Science Fiction/Fantasy">
+          <option value="Self-Help">
+          <option value="Short Stories">
+          <option value="Superheroes">
+          <option value="Young Adult">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="d-status">
+          <option value="Unread" selected>Unread</option>
+          <option value="Read">Read</option>
+          <option value="Reading">Reading</option>
+          <option value="Borrowed">Borrowed</option>
+          <option value="Donated">Donated</option>
+          <option value="Gifted">Gifted</option>
+          <option value="Lost">Lost</option>
+          <option value="Missing">Missing</option>
+          <option value="Outstanding">Outstanding</option>
+          <option value="Owned">Owned</option>
+          <option value="To Be Found">To Be Found</option>
+          <option value="Wishlisted">Wishlisted</option>
+          <option value="Wishlisted+">Wishlisted+</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Purchased From</label>
+        <input type="text" id="d-source" list="source-opts2" autocomplete="off" />
+        <datalist id="source-opts2">
+          <option value="Amazon">
+          <option value="Bookshop.org">
+          <option value="Folio Society">
+          <option value="Tertulia">
+          <option value="Savers">
+          <option value="Waterstones">
+          <option value="Gift">
+          <option value="Powell's Books">
+          <option value="Local Bookstore">
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Purchase Date</label>
+        <input type="date" id="d-date" />
+      </div>
+      <div class="field">
+        <label>Value <span class="hint">valuable books only</span></label>
+        <input type="number" id="d-value" step="0.01" placeholder="leave blank if N/A" />
+      </div>
+      <div class="field span-2">
+        <label>Notes <span class="hint">editions, signatures, etc.</span></label>
+        <textarea id="d-notes" placeholder="e.g. 1st Edition, 3rd Printing; signed by author"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-ghost" onclick="cancelOrBack()">← Back</button>
+    <div class="spacer"></div>
+    <button class="btn btn-primary" id="next-btn" onclick="saveBook()">Next →</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SCREEN 4 · Done
+═══════════════════════════════════════════ -->
+<div id="s-done" class="screen">
+  <div class="screen-title">✅ Session Complete</div>
+  <div class="screen-sub" id="done-sub">0 books logged this session.</div>
+
+  <div class="card">
+    <div id="book-list"></div>
+  </div>
+
+  <div class="card accent">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Add to Vaheh's Library</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:14px;line-height:1.5;">
+      Click <strong>Copy Rows</strong>, open the sheet, go to the <strong>New Books</strong> tab,
+      click the first empty cell in column A, and paste (⌘V or Ctrl+V).<br><br>
+      Columns D, H, and I are formula columns — they're left blank in the paste so your existing
+      formulas can fill them. After pasting, extend those formulas down from the row above if needed.
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-green" onclick="copyAll()">📋 Copy Rows</button>
+      <a class="sheet-link"
+        href="https://docs.google.com/spreadsheets/d/1YzaKIREZLWIxwC1NypQetYSBPmiE6WtScdiLX52fpts/edit"
+        target="_blank">Open Vaheh's Library ↗</a>
+    </div>
+    <div id="copy-confirm" class="copy-confirm">✓ Copied! Go paste into the New Books tab.</div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:700;font-size:14px;margin-bottom:6px;">Continue on Another Device</div>
+    <div style="font-size:13px;color:#6b7280;margin-bottom:14px;line-height:1.5;">
+      Scanning on your phone? Share this session as a file (AirDrop, Drive, Messages, email — whatever's easiest),
+      then open this page on your computer and import it from the setup screen.
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="exportSession()">📤 Share / Save Session File</button>
+    <div id="export-confirm" class="copy-confirm"></div>
+  </div>
+
+  <button class="btn btn-ghost btn-full" onclick="newSession()" style="margin-top:4px;">
+    + Start New Session
+  </button>
+</div>
+
+  </div>
 </div>
 
 <script>
@@ -398,7 +1243,7 @@ const STATE = {
 };
 
 function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
 function statusClass(status) {
@@ -427,8 +1272,10 @@ function populateSeries2Filter() {
 function showTab(tab) {
   document.getElementById('tab-panel-lib').classList.toggle('active', tab === 'lib');
   document.getElementById('tab-panel-col').classList.toggle('active', tab === 'col');
+  document.getElementById('tab-panel-add').classList.toggle('active', tab === 'add');
   document.getElementById('tab-btn-lib').classList.toggle('active', tab === 'lib');
   document.getElementById('tab-btn-col').classList.toggle('active', tab === 'col');
+  document.getElementById('tab-btn-add').classList.toggle('active', tab === 'add');
 }
 
 function applySort(tab, list) {
@@ -659,12 +1506,990 @@ async function loadCollections() {
   }
 }
 
+
+// ══════════════════════════════════════════════════════════
+//  ADD BOOKS TAB — logic ported from the standalone book_logger.html
+// ══════════════════════════════════════════════════════════
+
+// ─── Barcode Scanner ────────────────────────────────────────
+// Book barcodes are printed as EAN-13 ("Bookland EAN", 978/979 prefix),
+// even for older ISBN-10 titles — restricting to EAN_13 cuts down on
+// misreads from other stray codes in frame (price stickers, etc).
+let zxingReader = null;
+let scannerActive = false;
+let scannerBulk = false;
+let lastScanCode = null;
+let lastScanAt = 0;
+
+function scannerSupported() {
+  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.ZXing);
+}
+
+// opts.bulk: true keeps the camera open and auto-saves every decode instead
+// of closing on the first hit — used by Bulk Scan Mode to blast through a
+// stack of books without stopping between each one.
+async function openScanner(opts) {
+  opts = opts || {};
+  scannerBulk = !!opts.bulk;
+  lastScanCode = null;
+  lastScanAt = 0;
+
+  const overlay = document.getElementById('scanner-overlay');
+  const errEl = document.getElementById('scanner-error');
+  const badge = document.getElementById('scanner-bulk-badge');
+  const toast = document.getElementById('scanner-toast');
+  const cancelBtn = document.getElementById('scanner-cancel-btn');
+  const hint = document.getElementById('scanner-hint');
+
+  errEl.textContent = '';
+  document.getElementById('scanner-frame').classList.remove('found');
+  if (toast) { toast.style.display = 'none'; toast.textContent = ''; toast.classList.remove('warn'); }
+  if (badge) {
+    badge.style.display = scannerBulk ? 'block' : 'none';
+    badge.textContent = `${ST.books.length} scanned`;
+  }
+  if (cancelBtn) cancelBtn.textContent = scannerBulk ? 'Done Scanning' : 'Cancel';
+  if (hint) hint.textContent = scannerBulk
+    ? 'Scan each barcode in turn — it auto-saves and the camera stays open for the next one.'
+    : 'Hold the book\'s back-cover barcode a few inches from the camera, inside the box.';
+
+  overlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+  scannerActive = true;
+
+  if (!scannerSupported()) {
+    errEl.textContent = 'Camera scanning isn\'t available in this browser — enter the ISBN manually instead.';
+    return;
+  }
+
+  try {
+    if (!zxingReader) {
+      const hints = new Map();
+      hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.EAN_13]);
+      zxingReader = new ZXing.BrowserMultiFormatReader(hints);
+    } else {
+      try { zxingReader.reset(); } catch (e) { /* already stopped */ }
+    }
+
+    // Ask directly for the rear/environment camera via constraints rather
+    // than enumerating devices and matching on label — device labels come
+    // back blank until permission is already granted, so label-matching
+    // silently fails on a phone's very first scan.
+    const constraints = { video: { facingMode: { ideal: 'environment' } } };
+
+    zxingReader.decodeFromConstraints(constraints, 'scanner-video', (result, err) => {
+      if (!scannerActive) return;
+      if (result) {
+        const text = result.getText().replace(/[-\s]/g, '');
+        const now = Date.now();
+        if (text === lastScanCode && now - lastScanAt < 4000) return; // debounce re-reads of the same code
+        lastScanCode = text;
+        lastScanAt = now;
+
+        const frame = document.getElementById('scanner-frame');
+        frame.classList.add('found');
+        setTimeout(() => frame.classList.remove('found'), 500);
+
+        if (scannerBulk) {
+          handleBulkScan(text);
+        } else {
+          document.getElementById('isbn-val').value = text;
+          setTimeout(() => {
+            closeScanner();
+            doLookup();
+          }, 200);
+        }
+      }
+      // NotFoundException fires continuously between frames while no code is
+      // in view — that's normal scanning noise, not a real error.
+    });
+  } catch (e) {
+    errEl.textContent = (e && e.name === 'NotAllowedError')
+      ? 'Camera access was denied — allow camera access for this page, or enter the ISBN manually.'
+      : `Camera error: ${e.message || e} — enter the ISBN manually instead.`;
+  }
+}
+
+function closeScanner() {
+  scannerActive = false;
+  document.getElementById('scanner-overlay').classList.remove('show');
+  document.body.style.overflow = '';
+  if (zxingReader) {
+    try { zxingReader.reset(); } catch (e) { /* already stopped */ }
+  }
+  if (scannerBulk) {
+    updateBulkScreen();
+    show('s-bulk');
+  }
+}
+
+// ─── State ───────────────────────────────────────────────
+// ST.books holds field objects (not pre-baked rows) so an entry can be
+// re-opened for editing later — the TSV row is only built at copy/export
+// time via fieldsToRow().
+const ST = {
+  n: 1,
+  current: 1,
+  session: {},
+  books: [],
+  bulk: false,
+  editingIndex: null,
+  returnScreen: null
+};
+
+// ─── Autosave (survives an accidental tab close / crash) ──
+const STORAGE_KEY = 'bookLoggerSession_v1';
+
+function persistState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      n: ST.n, current: ST.current, session: ST.session, books: ST.books, bulk: ST.bulk
+    }));
+  } catch(e) { /* storage unavailable — not fatal */ }
+}
+
+function clearPersisted() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+}
+
+function checkForSavedSession() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) {}
+  if (saved && Array.isArray(saved.books) && saved.books.length > 0) {
+    const remaining = (!saved.bulk && saved.n) ? Math.max(0, saved.n - saved.books.length) : 0;
+    document.getElementById('resume-detail').textContent =
+      `${saved.books.length} book${saved.books.length !== 1 ? 's' : ''} already logged` +
+      (saved.bulk ? ' (bulk session).' : (remaining ? `, ${remaining} left in that batch.` : ' in that batch.'));
+    document.getElementById('resume-banner').style.display = 'block';
+    ST._pendingResume = saved;
+  }
+}
+
+function resumeSession() {
+  const saved = ST._pendingResume;
+  if (!saved) return;
+  Object.assign(ST, {
+    n: saved.n || saved.books.length,
+    current: saved.books.length + 1,
+    session: saved.session || {},
+    books: saved.books || [],
+    bulk: !!saved.bulk,
+    editingIndex: null,
+    returnScreen: null
+  });
+  document.getElementById('resume-banner').style.display = 'none';
+  if (ST.bulk) {
+    show('s-bulk');
+    updateBulkScreen();
+  } else if (ST.current > ST.n) {
+    showDone();
+  } else {
+    clearISBN(); show('s-isbn'); updateProgress();
+  }
+}
+
+function discardSession() {
+  clearPersisted();
+  ST._pendingResume = null;
+  document.getElementById('resume-banner').style.display = 'none';
+}
+
+// ─── Screen navigation ────────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goSetup() { show('s-setup'); }
+function backToISBN() { show('s-isbn'); }
+
+// Cancels an in-progress edit (from Done/Review) without saving, or falls
+// back to the normal ISBN-screen back button when not editing.
+function cancelOrBack() {
+  if (ST.editingIndex != null) {
+    const returnTo = ST.returnScreen || 's-done';
+    ST.editingIndex = null;
+    ST.returnScreen = null;
+    resetDetailsScreenChrome();
+    if (returnTo === 's-review') { show('s-review'); renderReview(); }
+    else { show('s-done'); showDone(); }
+  } else {
+    backToISBN();
+  }
+}
+
+function resetDetailsScreenChrome() {
+  const pw = document.querySelector('#s-details .progress-wrap');
+  if (pw) pw.style.display = '';
+  const nb = document.getElementById('next-btn');
+  if (nb) nb.textContent = (ST.current === ST.n) ? 'Finish ✓' : 'Next →';
+  const heading = document.getElementById('det-heading');
+  if (heading) heading.textContent = `Book ${ST.current} of ${ST.n}`;
+}
+
+// ─── Progress helpers ─────────────────────────────────────
+function updateProgress() {
+  const pct = Math.round(((ST.current - 1) / ST.n) * 100);
+  const label = `Book ${ST.current} of ${ST.n}`;
+  ['p-isbn-label','p-det-label'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = label;
+  });
+  ['p-isbn-bar','p-det-bar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.width = pct + '%';
+  });
+  const nextBtn = document.getElementById('next-btn');
+  if (nextBtn) nextBtn.textContent = ST.current === ST.n ? 'Finish ✓' : 'Next →';
+  const heading = document.getElementById('det-heading');
+  if (heading) heading.textContent = `Book ${ST.current} of ${ST.n}`;
+}
+
+// ─── Session Setup ────────────────────────────────────────
+function startSession() {
+  ST.books = [];
+  ST.editingIndex = null;
+  ST.returnScreen = null;
+  ST.session = {
+    source: document.getElementById('s-source').value.trim(),
+    date:   document.getElementById('s-date').value,
+    publisher: document.getElementById('s-publisher').value.trim()
+  };
+
+  const bulkOn = document.getElementById('s-bulk-toggle').checked;
+  if (bulkOn) {
+    ST.bulk = true;
+    ST.n = 0;
+    ST.current = 0;
+    persistState();
+    show('s-bulk');
+    updateBulkScreen();
+    openScanner({ bulk: true });
+  } else {
+    ST.bulk = false;
+    ST.n = Math.max(1, parseInt(document.getElementById('s-count').value) || 1);
+    ST.current = 1;
+    persistState();
+    clearISBN();
+    show('s-isbn');
+    updateProgress();
+  }
+}
+
+// ─── Bulk Scan Mode ───────────────────────────────────────
+function updateBulkScreen() {
+  const countEl = document.getElementById('bulk-count');
+  if (countEl) countEl.textContent = ST.books.length;
+
+  const lastCard = document.getElementById('bulk-last-card');
+  const last = ST.books[ST.books.length - 1];
+  if (lastCard) {
+    if (last) {
+      lastCard.style.display = '';
+      document.getElementById('bulk-last-title').innerHTML =
+        escapeHtml(last.title) || `ISBN ${escapeHtml(last.isbn || '?')}`;
+      if (last.needsReview) {
+        document.getElementById('bulk-last-title').innerHTML += ' <span class="badge-warn">needs review</span>';
+      }
+      document.getElementById('bulk-last-meta').textContent =
+        [last.authors, last.genre].filter(Boolean).join(' · ') || (last.needsReview ? 'Not found — fill in manually later' : '');
+    } else {
+      lastCard.style.display = 'none';
+    }
+  }
+}
+
+async function handleBulkScan(raw) {
+  showScannerToast(`Looking up ${raw}…`);
+  const result = await lookupIsbn(raw);
+
+  const fields = {
+    isbn: raw,
+    title: result?.title || '',
+    authors: result?.authors || '',
+    illustrators: '',
+    genre: result?.genre || '',
+    subgenre: result?.subgenre || '',
+    status: 'Unread',
+    publisher: result?.publisher || ST.session.publisher || '',
+    published: result ? parsePublishedDate(result.published) : '',
+    pages: result?.pages || '',
+    notes: '',
+    source: ST.session.source || '',
+    purchaseDate: ST.session.date || '',
+    value: '',
+    needsReview: !result
+  };
+
+  ST.books.push(fields);
+  persistState();
+
+  const badge = document.getElementById('scanner-bulk-badge');
+  if (badge) badge.textContent = `${ST.books.length} scanned`;
+
+  if (result) {
+    showScannerToast(`✓ ${fields.title || raw}`);
+  } else {
+    showScannerToast(`⚠ ${raw} not found — added for review`, true);
+  }
+}
+
+function showScannerToast(msg, warn) {
+  const el = document.getElementById('scanner-toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.classList.toggle('warn', !!warn);
+}
+
+function finishBulk() {
+  ST.bulk = false;
+  show('s-done');
+  showDone();
+}
+
+// ─── ISBN Screen ──────────────────────────────────────────
+function clearISBN() {
+  const el = document.getElementById('isbn-val');
+  if (el) { el.value = ''; el.focus(); }
+  statusMsg('isbn-status', '', '');
+}
+
+function statusMsg(id, msg, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'status' + (cls ? ' ' + cls : '');
+}
+
+// ─── Genre / Subgenre suggestion ─────────────────────────
+function suggestGenreSubgenre(hints) {
+  const t = (hints || []).join(' ').toLowerCase();
+
+  let genre = 'Fiction';
+  if (/non.?fiction|biography|memoir|history(?! of fiction)|science(?! fiction)|true crime|self.help|business|social science|essay|reference|philosophy|politic/i.test(t)) {
+    genre = 'Non-Fiction';
+  }
+  if (/graphic novel|comic(?!al)|manga/i.test(t))  genre = 'Graphic Novel';
+  if (/\bpoetry\b|\bpoem\b/i.test(t))              genre = 'Poetry';
+  if (/\bphilosophy\b/i.test(t))                   genre = 'Philosophy';
+
+  let subgenre = '';
+  const rules = [
+    [/science fiction|sci.fi|space opera|dystopi|cyberpunk|solarpunk/i, 'Science Fiction'],
+    [/\bfantasy\b/i,                                                      'Fantasy'],
+    [/\bhorror\b/i,                                                        'Horror'],
+    [/mystery|thriller|suspense|detective|crime fiction/i,                 'Mystery/Thriller'],
+    [/historical fiction/i,                                                'Historical Fiction'],
+    [/literary fiction/i,                                                  'Literary Fiction'],
+    [/magical realism/i,                                                   'Magical Realism'],
+    [/young adult/i,                                                       'Young Adult'],
+    [/\bromance\b/i,                                                       'Romance'],
+    [/satire|parody|comedy/i,                                              'Comedy/Satire'],
+    [/biography|memoir|autobiography/i,                                    'Biography/Memoir'],
+    [/short stor/i,                                                        'Short Stories'],
+    [/mytholog/i,                                                          'Mythology'],
+    [/coming.of.age|bildungsroman/i,                                       'Bildungsroman'],
+    [/superher/i,                                                          'Superheroes'],
+    [/\bself.help\b/i,                                                     'Self-Help'],
+    [/leadership|management|business fable/i,                              'Leadership'],
+    [/\bessays?\b/i,                                                       'Essays and Aphorisms'],
+  ];
+  for (const [pattern, value] of rules) {
+    if (pattern.test(t)) { subgenre = value; break; }
+  }
+
+  return { genre, subgenre };
+}
+
+// ─── ISBN lookup sources ───────────────────────────────────
+// Amazon has no accessible public API for this (Product Advertising API
+// requires a paid/approved seller account and server-side signed requests —
+// not something a static page can call), and scraping amazon.com directly
+// would be blocked by CORS anyway and isn't something this tool will do.
+// Instead we query every free source we can reach IN PARALLEL and MERGE the
+// results field-by-field, so a gap in one source gets filled by another
+// instead of the whole lookup living or dying on a single API's data quality.
+//
+// Each request is capped with an explicit timeout. A source that's blocked
+// or unreachable on a given network (firewall, DNS filtering, VPN, etc.)
+// otherwise hangs forever with no error and no rejection — and since these
+// run inside Promise.all, one silently-stuck source freezes "Looking up…"
+// permanently even though the other sources already came back.
+const LOOKUP_TIMEOUT_MS = 7000;
+
+async function fetchWithTimeout(url, ms = LOOKUP_TIMEOUT_MS) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { signal: ctrl.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+const GOOGLE_BOOKS_API_KEY = 'AIzaSyCcOEJFMGS29NOuX96CcnrWwBgilAKtyvM';
+
+async function fetchGoogleBooks(raw) {
+  try {
+    const r = await fetchWithTimeout(`https://www.googleapis.com/books/v1/volumes?q=isbn:${raw}&key=${GOOGLE_BOOKS_API_KEY}`);
+    const json = await r.json();
+    const v = json.items && json.items[0] && json.items[0].volumeInfo;
+    if (!v || !v.title) return null;
+    return {
+      title: v.title || '', authors: (v.authors || []).join('; '),
+      publisher: v.publisher || '', published: v.publishedDate || '',
+      pages: v.pageCount || '', subjects: v.categories || []
+    };
+  } catch(e) { return null; }
+}
+
+// Open Library's richest endpoint — normalized publisher/author objects.
+async function fetchOpenLibraryData(raw) {
+  try {
+    const r = await fetchWithTimeout(`https://openlibrary.org/api/books?bibkeys=ISBN:${raw}&jscmd=data&format=json`);
+    const json = await r.json();
+    const book = json[`ISBN:${raw}`];
+    if (!book || !book.title) return null;
+    return {
+      title: book.title || '',
+      authors: (book.authors || []).map(a => a.name).filter(Boolean).join('; '),
+      publisher: ((book.publishers || [])[0] || {}).name || '',
+      published: book.publish_date || '',
+      pages: book.number_of_pages || '',
+      subjects: (book.subjects || []).map(s => s.name || s)
+    };
+  } catch(e) { return null; }
+}
+
+async function fetchOpenLibrarySearch(raw) {
+  try {
+    const r = await fetchWithTimeout(`https://openlibrary.org/search.json?isbn=${raw}&fields=title,author_name,publisher,first_publish_year,number_of_pages_median,subject`);
+    const json = await r.json();
+    const doc = json.docs && json.docs[0];
+    if (!doc || !doc.title) return null;
+    return {
+      title: doc.title || '', authors: (doc.author_name || []).join('; '),
+      publisher: (doc.publisher || [])[0] || '',
+      published: doc.first_publish_year ? String(doc.first_publish_year) : '',
+      pages: doc.number_of_pages_median || '', subjects: doc.subject || []
+    };
+  } catch(e) { return null; }
+}
+
+// Direct edition record — often the most accurate publisher/date for the
+// exact printing, since it isn't going through a search index.
+async function fetchOpenLibraryIsbn(raw) {
+  try {
+    const r = await fetchWithTimeout(`https://openlibrary.org/isbn/${raw}.json`);
+    if (!r.ok) return null;
+    const book = await r.json();
+    if (!book || !book.title) return null;
+    let authors = '';
+    if (book.authors && book.authors.length) {
+      const names = await Promise.all(book.authors.map(async a => {
+        try {
+          const ar = await fetchWithTimeout(`https://openlibrary.org${a.key}.json`);
+          const ad = await ar.json();
+          return ad.name || '';
+        } catch(e) { return ''; }
+      }));
+      authors = names.filter(Boolean).join('; ');
+    }
+    return {
+      title: book.title || '', authors,
+      publisher: (book.publishers || [])[0] || '',
+      published: book.publish_date || '',
+      pages: book.pagination || book.number_of_pages || '',
+      subjects: book.subjects || []
+    };
+  } catch(e) { return null; }
+}
+
+function pickField(...vals) {
+  for (const v of vals) {
+    if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+  }
+  return '';
+}
+
+// Shared by the single-scan flow (doLookup) and Bulk Scan Mode
+// (handleBulkScan) — queries every source in parallel and merges the best
+// field from each. Returns null when nothing came back.
+async function lookupIsbn(raw) {
+  const [g, ol, ols, oli] = await Promise.all([
+    fetchGoogleBooks(raw),
+    fetchOpenLibraryData(raw),
+    fetchOpenLibrarySearch(raw),
+    fetchOpenLibraryIsbn(raw)
+  ]);
+
+  const hits = [g, ol, ols, oli].filter(Boolean);
+  if (!hits.length) return null;
+
+  // Field-by-field merge — a source that's blank/wrong for one field doesn't
+  // block a good value from another source for a different field.
+  const title     = pickField(g?.title, oli?.title, ol?.title, ols?.title);
+  const authors   = pickField(g?.authors, oli?.authors, ol?.authors, ols?.authors);
+  const publisher = pickField(oli?.publisher, ol?.publisher, g?.publisher, ols?.publisher);
+  const published = pickField(oli?.published, ol?.published, g?.published, ols?.published);
+  const pages     = pickField(g?.pages, oli?.pages, ol?.pages, ols?.pages);
+  const subjects  = [...(g?.subjects||[]), ...(ol?.subjects||[]), ...(ols?.subjects||[]), ...(oli?.subjects||[])];
+  const { genre, subgenre } = suggestGenreSubgenre(subjects);
+
+  return { title, authors, publisher, published, pages, genre, subgenre, hitCount: hits.length };
+}
+
+async function doLookup() {
+  const raw = document.getElementById('isbn-val').value.trim().replace(/[-\s]/g, '');
+  if (!raw) { statusMsg('isbn-status', 'Enter an ISBN first.', 'error'); return; }
+
+  const btn = document.getElementById('lookup-btn');
+  btn.disabled = true;
+  statusMsg('isbn-status', 'Looking up…', 'loading');
+
+  const result = await lookupIsbn(raw);
+
+  if (!result) {
+    statusMsg('isbn-status', 'Not found in Google Books or Open Library — enter details manually.', 'error');
+    setTimeout(() => { prefillDetails({ isbn: raw }); show('s-details'); updateProgress(); btn.disabled = false; }, 1200);
+    return;
+  }
+
+  prefillDetails({ ...result, illustrators: '', isbn: raw });
+  statusMsg('isbn-status', `✓ Found (${result.hitCount} source${result.hitCount > 1 ? 's' : ''})`, 'ok');
+  setTimeout(() => { show('s-details'); updateProgress(); btn.disabled = false; }, 300);
+}
+
+function skipToDetails() {
+  prefillDetails({ isbn: '' });
+  show('s-details');
+  updateProgress();
+}
+
+// ─── Details Screen ───────────────────────────────────────
+function flash(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('flashed');
+  void el.offsetWidth;
+  el.classList.add('flashed');
+}
+
+function set(id, val) {
+  if (val == null || val === '') return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.value = val;
+  flash(id);
+}
+
+function prefillDetails(data) {
+  ['d-title','d-authors','d-illustrators','d-isbn','d-publisher',
+   'd-published','d-pages','d-genre','d-subgenre','d-notes','d-value']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('d-status').value = 'Unread';
+
+  // Session defaults (always)
+  const srcEl = document.getElementById('d-source');
+  if (srcEl) srcEl.value = ST.session.source || '';
+  document.getElementById('d-date').value = ST.session.date || '';
+  if (ST.session.publisher) document.getElementById('d-publisher').value = ST.session.publisher;
+
+  // Book-specific overrides
+  set('d-title',        data.title);
+  set('d-authors',      data.authors);
+  set('d-illustrators', data.illustrators);
+  set('d-isbn',         data.isbn);
+  if (data.publisher) set('d-publisher', data.publisher);
+
+  // Suggested genre/subgenre from API categories
+  set('d-genre',    data.genre);
+  set('d-subgenre', data.subgenre);
+
+  if (data.published) {
+    const parsed = parsePublishedDate(data.published);
+    if (parsed) set('d-published', parsed);
+  }
+  set('d-pages', data.pages);
+}
+
+// Convert API date strings to a display value for the Published text field
+function parsePublishedDate(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}$/.test(s)) return s;
+  if (/^\d{4}$/.test(s)) return s;
+  const d = new Date(s);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  return s;
+}
+
+// Format a date value for the TSV
+function fmtDate(input) {
+  if (!input) return '';
+  const s = String(input).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) { const [y,m,d]=s.split('-'); return `${m}-${d}-${y}`; }
+  if (/^\d{2}-\d{2}-\d{4}$/.test(s)) return s;
+  if (/^\d{4}-\d{2}$/.test(s)) { const [y,m]=s.split('-'); return `${m}-01-${y}`; }
+  if (/^\d{4}$/.test(s)) return s;
+  const d = new Date(s);
+  if (!isNaN(d)) { const m=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0'); return `${m}-${dy}-${d.getFullYear()}`; }
+  return s;
+}
+
+// ─── Small helpers ─────────────────────────────────────────
+// escapeHtml() is shared with the Library Search / Collections tabs above.
+
+// Builds the TSV row for one book from its stored fields object.
+// Formatting (dates, value) is applied here, at row-build time, so it's
+// identical whether the fields came from the manual form or a bulk scan.
+function fieldsToRow(f) {
+  const fmtValue = f.value ? parseFloat(f.value).toFixed(2) : '';
+  // A       B      C        D   E        F           G        H   I   J           K                    L        M         N         O               P          Q        R
+  return [f.isbn || '', f.title || '', f.authors || '', '', f.genre || '', f.subgenre || '', f.status || 'Unread', '', '', f.publisher || '', fmtDate(f.published), f.pages || '', f.notes || '', f.source || '', fmtDate(f.purchaseDate), fmtValue, f.authors || '', f.illustrators || ''];
+}
+
+// ─── Save Book & Advance ──────────────────────────────────
+function saveBook() {
+  const g = id => document.getElementById(id).value.trim();
+
+  const fields = {
+    isbn:         g('d-isbn'),
+    title:        g('d-title'),
+    authors:      g('d-authors'),
+    illustrators: g('d-illustrators'),
+    genre:        g('d-genre'),
+    subgenre:     g('d-subgenre'),
+    status:       document.getElementById('d-status').value,
+    publisher:    g('d-publisher'),
+    published:    document.getElementById('d-published').value.trim(),
+    pages:        g('d-pages'),
+    notes:        g('d-notes'),
+    source:       g('d-source'),
+    purchaseDate: document.getElementById('d-date').value,
+    value:        g('d-value'),
+    needsReview:  false
+  };
+
+  if (ST.editingIndex != null) {
+    ST.books[ST.editingIndex] = fields;
+    const returnTo = ST.returnScreen || 's-done';
+    ST.editingIndex = null;
+    ST.returnScreen = null;
+    persistState();
+    resetDetailsScreenChrome();
+    if (returnTo === 's-review') { show('s-review'); renderReview(); }
+    else { show('s-done'); showDone(); }
+    return;
+  }
+
+  ST.books.push(fields);
+  persistState();
+
+  if (ST.current < ST.n) {
+    ST.current++;
+    clearISBN();
+    show('s-isbn');
+    updateProgress();
+  } else {
+    showDone();
+  }
+}
+
+// Opens the Details screen pre-filled with a previously logged book, so it
+// can be corrected in place (used from the Done and Review screens).
+function editBook(index, returnScreen) {
+  const b = ST.books[index];
+  if (!b) return;
+  ST.editingIndex = index;
+  ST.returnScreen = returnScreen;
+
+  prefillDetails(b);
+  // Fields prefillDetails doesn't cover (or that need the raw, unformatted
+  // value rather than a display-formatted one) are set directly.
+  document.getElementById('d-status').value = b.status || 'Unread';
+  document.getElementById('d-source').value = b.source || '';
+  document.getElementById('d-date').value = b.purchaseDate || '';
+  document.getElementById('d-value').value = b.value || '';
+  document.getElementById('d-notes').value = b.notes || '';
+  document.getElementById('d-published').value = b.published || '';
+
+  const pw = document.querySelector('#s-details .progress-wrap');
+  if (pw) pw.style.display = 'none';
+  const nb = document.getElementById('next-btn');
+  if (nb) nb.textContent = 'Save →';
+  const heading = document.getElementById('det-heading');
+  if (heading) heading.textContent = 'Edit Book';
+  show('s-details');
+}
+
+function bookRowHtml(b, i, returnScreen) {
+  return `
+    <div class="book-row">
+      <div class="book-num">${i + 1}</div>
+      <div style="flex:1;">
+        <div class="book-title">${escapeHtml(b.title) || '(no title)'}${b.needsReview ? ' <span class="badge-warn">needs review</span>' : ''}</div>
+        <div class="book-meta">${escapeHtml(b.authors)}${b.genre ? ' · ' + escapeHtml(b.genre) : ''}</div>
+      </div>
+      <button class="btn btn-ghost review-row-btn" onclick="editBook(${i}, '${returnScreen}')">Edit</button>
+      <button class="btn btn-danger review-row-btn" onclick="deleteBook(${i}, '${returnScreen}')">Delete</button>
+    </div>`;
+}
+
+// Removes a logged book (used to correct mis-scans or duplicate scans) after
+// a confirm prompt, then re-renders whichever list screen it was deleted from.
+function deleteBook(index, returnScreen) {
+  const b = ST.books[index];
+  if (!b) return;
+  const label = b.title || (b.isbn ? `ISBN ${b.isbn}` : 'this entry');
+  if (!confirm(`Delete "${label}"? This can't be undone.`)) return;
+
+  ST.books.splice(index, 1);
+  if (ST.editingIndex === index) { ST.editingIndex = null; ST.returnScreen = null; }
+  else if (ST.editingIndex != null && ST.editingIndex > index) { ST.editingIndex--; }
+  persistState();
+
+  if (returnScreen === 's-review') renderReview();
+  else showDone();
+}
+
+// ─── Review Screen (imported books) ────────────────────────
+function renderReview() {
+  document.getElementById('review-list').innerHTML =
+    ST.books.map((b, i) => bookRowHtml(b, i, 's-review')).join('');
+}
+
+// ─── Done Screen ──────────────────────────────────────────
+function showDone() {
+  const n = ST.books.length;
+  const needingReview = ST.books.filter(b => b.needsReview).length;
+  document.getElementById('done-sub').textContent =
+    `${n} book${n !== 1 ? 's' : ''} logged this session.` +
+    (needingReview ? ` ${needingReview} need${needingReview !== 1 ? '' : 's'} review.` : '');
+
+  document.getElementById('book-list').innerHTML =
+    ST.books.map((b, i) => bookRowHtml(b, i, 's-done')).join('');
+
+  document.getElementById('copy-confirm').classList.remove('show');
+  show('s-done');
+}
+
+function copyAll() {
+  const tsv = ST.books.map(b => fieldsToRow(b).join('\t')).join('\n');
+  navigator.clipboard.writeText(tsv)
+    .then(() => document.getElementById('copy-confirm').classList.add('show'))
+    .catch(() => prompt('Copy this and paste into your sheet:', tsv));
+}
+
+function newSession() {
+  Object.assign(ST, { n: 1, current: 1, books: [], session: {}, bulk: false, editingIndex: null, returnScreen: null });
+  clearPersisted();
+  const bulkToggle = document.getElementById('s-bulk-toggle');
+  if (bulkToggle) bulkToggle.checked = false;
+  const countField = document.getElementById('s-count-field');
+  if (countField) countField.style.display = '';
+  show('s-setup');
+}
+
+// ─── Cross-device session export / import ──────────────────
+function exportSession() {
+  const data = { version: 1, exportedAt: new Date().toISOString(), session: ST.session, books: ST.books };
+  const json = JSON.stringify(data, null, 2);
+  const filename = `book-session-${new Date().toISOString().slice(0, 10)}-${ST.books.length}books.json`;
+  const blob = new Blob([json], { type: 'application/json' });
+  const confirmEl = document.getElementById('export-confirm');
+
+  async function tryShare() {
+    if (!(navigator.share && navigator.canShare)) return false;
+    try {
+      const file = new File([blob], filename, { type: 'application/json' });
+      if (!navigator.canShare({ files: [file] })) return false;
+      await navigator.share({ files: [file], title: 'Book session', text: `${ST.books.length} books scanned` });
+      return true;
+    } catch (e) {
+      // User cancelling the share sheet shouldn't trigger a download fallback.
+      return e && e.name === 'AbortError';
+    }
+  }
+
+  tryShare().then(shared => {
+    if (!shared) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    }
+    if (confirmEl) {
+      confirmEl.textContent = '✓ Session file saved — open it on your other device to import.';
+      confirmEl.classList.add('show');
+      setTimeout(() => confirmEl.classList.remove('show'), 4000);
+    }
+  });
+}
+
+function normalizeImportedBook(b) {
+  b = b || {};
+  return {
+    isbn:         b.isbn || '',
+    title:        b.title || '',
+    authors:      b.authors || '',
+    illustrators: b.illustrators || '',
+    genre:        b.genre || '',
+    subgenre:     b.subgenre || '',
+    status:       b.status || 'Unread',
+    publisher:    b.publisher || '',
+    published:    b.published || '',
+    pages:        b.pages || '',
+    notes:        b.notes || '',
+    source:       b.source || '',
+    purchaseDate: b.purchaseDate || '',
+    value:        b.value || '',
+    needsReview:  !!b.needsReview
+  };
+}
+
+function handleImportFiles(fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  let pending = files.length;
+  let importedCount = 0;
+  const errors = [];
+
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        const books = Array.isArray(data.books) ? data.books : [];
+        books.forEach(b => ST.books.push(normalizeImportedBook(b)));
+        importedCount += books.length;
+        if (data.session && (!ST.session || Object.keys(ST.session).length === 0)) {
+          ST.session = data.session;
+        }
+      } catch (e) {
+        errors.push(file.name);
+      }
+      if (--pending === 0) finishImport();
+    };
+    reader.onerror = () => {
+      errors.push(file.name);
+      if (--pending === 0) finishImport();
+    };
+    reader.readAsText(file);
+  });
+
+  function finishImport() {
+    ST.bulk = false;
+    ST.editingIndex = null;
+    ST.returnScreen = null;
+    persistState();
+    const input = document.getElementById('import-file-input');
+    if (input) input.value = '';
+    if (errors.length) {
+      alert(`Couldn't read: ${errors.join(', ')}. Anything else imported OK.`);
+    }
+    if (importedCount > 0) {
+      show('s-review');
+      renderReview();
+    }
+  }
+}
+
+// ─── Live library data ────────────────────────────────────
+// SHEET_ID, gvizFetch(), and escapeHtml() are shared with the Library
+// Search / Collections tabs above — defined once near the top of this script.
+const SHEET_NAME = 'Library v1';
+
+async function loadLibraryData() {
+  try {
+    const hd = await gvizFetch(SHEET_NAME, 'select * limit 1');
+    const cols = {};
+    (hd.table?.cols || []).forEach((c, i) => {
+      if (c.label) cols[c.label.trim().toLowerCase()] = String.fromCharCode(65 + i);
+    });
+
+    const C = {
+      genre:     cols['genre']                                               || 'E',
+      subgenre:  cols['subgenre']                                            || 'F',
+      status:    cols['status']                                              || 'G',
+      title:     cols['title']                                               || 'B',
+      publisher: cols['publisher']                                           || 'J',
+      authors:   cols["author(s)"] || cols['authors'] || cols['author']     || 'C',
+      source:    cols['purchased from']                                      || 'N',
+    };
+
+    async function qcol(col) {
+      // count(col) is required alongside GROUP BY — this sheet's query engine
+      // rejects "group by X" with no aggregate (CANNOT_GROUP_WITHOUT_AGG).
+      const d = await gvizFetch(SHEET_NAME, `select ${col}, count(${col}) where ${col} is not null group by ${col} order by ${col}`);
+      return (d.table?.rows || [])
+        .map(r => r.c?.[0]?.v)
+        .filter(v => v != null && String(v).trim().length > 0)
+        .map(v => String(v).trim());
+    }
+
+    const [subgenres, statuses, titles, publishers, authors, sources] = await Promise.all([
+      qcol(C.subgenre), qcol(C.status),
+      qcol(C.title), qcol(C.publisher), qcol(C.authors), qcol(C.source)
+    ]);
+
+    function fill(id, vals) {
+      const dl = document.getElementById(id);
+      if (!dl || !vals.length) return;
+      dl.innerHTML = vals.map(v => `<option value="${v.replace(/"/g, '&quot;')}">`).join('');
+    }
+    fill('subgenre-opts', subgenres);
+    fill('author-opts',   authors);
+    fill('publisher-opts',publishers);
+    fill('title-opts',    titles);
+    fill('source-opts',   sources);
+    fill('source-opts2',  sources);
+
+    const VALID_STATUS = /^[A-Za-z][\w\s\+\-\/]{1,24}$/;
+    const cleanStatuses = statuses.filter(s => VALID_STATUS.test(s));
+    if (!cleanStatuses.includes('Unread')) cleanStatuses.unshift('Unread');
+    if (cleanStatuses.length) {
+      const sel = document.getElementById('d-status');
+      if (sel) {
+        const cur = sel.value || 'Unread';
+        sel.innerHTML = cleanStatuses
+          .map(s => `<option value="${s}"${s === cur ? ' selected' : ''}>${s}</option>`)
+          .join('');
+      }
+    }
+
+  } catch(e) {
+    console.error('loadLibraryData failed:', e);
+  }
+}
+
+
+// ─── Combined init (Library Search + Collections + Add Books) ──
 document.getElementById('lib-search-box').addEventListener('input', () => runSearch('lib'));
 document.getElementById('col-search-box').addEventListener('input', () => runSearch('col'));
 syncSortUI('lib');
 syncSortUI('col');
 loadLibrary();
 loadCollections();
+
+document.getElementById('s-date').value = new Date().toISOString().slice(0, 10);
+loadLibraryData();
+checkForSavedSession();
+
+(function initBulkToggle() {
+  const toggle = document.getElementById('s-bulk-toggle');
+  const countField = document.getElementById('s-count-field');
+  if (!toggle || !countField) return;
+  toggle.addEventListener('change', () => {
+    countField.style.display = toggle.checked ? 'none' : '';
+  });
+})();
 </script>
 </body>
 </html>
