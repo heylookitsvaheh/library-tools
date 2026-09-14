@@ -7,6 +7,7 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>Library Search</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48dGV4dCB5PSIuOWVtIiBmb250LXNpemU9IjkwIj7wn5OaPC90ZXh0Pjwvc3ZnPg==">
 <style>
 :root { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -1405,15 +1406,15 @@ function updatePageSubtitle() {
     return;
   }
   const total = STATE.lib.items.length;
+  // "Fiction" bucket absorbs everything that isn't explicitly Non-Fiction or
+  // Graphic Novel (so an "Other" genre, or anything unrecognized, counts as fiction).
   const graphicCount = STATE.lib.items.filter(b => b.genre === 'Graphic Novel').length;
-  const bookCount = total - graphicCount;
+  const nonfictionCount = STATE.lib.items.filter(b => b.genre === 'Non-Fiction').length;
+  const fictionCount = total - graphicCount - nonfictionCount;
   const colCount = STATE.col.items.length;
-  if (libLoaded && colLoaded) {
+  if (libLoaded) {
     document.getElementById('page-subtitle').textContent =
-      `${bookCount} books, ${graphicCount} graphic novels, ${colCount} collection entries`;
-  } else if (libLoaded) {
-    document.getElementById('page-subtitle').textContent =
-      `A library with ${bookCount} books and ${graphicCount} graphic novels (${total} books total)`;
+      `${total} books, including ${fictionCount} fiction, ${nonfictionCount} nonfiction, and ${graphicCount} graphic novels`;
   } else {
     document.getElementById('page-subtitle').textContent = `A collection with ${colCount} entr${colCount === 1 ? 'y' : 'ies'}`;
   }
