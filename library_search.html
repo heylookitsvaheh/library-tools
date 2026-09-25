@@ -548,6 +548,20 @@ tbody tr:last-child td { border-bottom: none; }
         <input type="text" id="lib-search-box" placeholder="Loading library…" disabled autocomplete="off" />
         <button class="btn btn-ghost" id="lib-clear-btn" onclick="clearSearch('lib')" disabled>Clear</button>
       </div>
+      <div class="filter-row">
+        <label for="lib-genre-filter">Genre</label>
+        <select id="lib-genre-filter" onchange="setLibFilter('genre', this.value)" disabled>
+          <option value="">All Genres</option>
+        </select>
+        <label for="lib-subgenre-filter">Subgenre</label>
+        <select id="lib-subgenre-filter" onchange="setLibFilter('subgenre', this.value)" disabled>
+          <option value="">All Subgenres</option>
+        </select>
+        <label for="lib-status-filter">Status</label>
+        <select id="lib-status-filter" onchange="setLibFilter('status', this.value)" disabled>
+          <option value="">All Statuses</option>
+        </select>
+      </div>
       <div class="sort-row">
         <label for="lib-sort-field">Sort by</label>
         <select id="lib-sort-field" onchange="setSort('lib', this.value, true)">
@@ -1239,7 +1253,7 @@ function gvizFetch(sheetName, tq) {
 
 // ─── Per-tab state ───
 const STATE = {
-  lib: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','status','publisher','isbn'] },
+  lib: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','status','publisher','isbn'], genreFilter: '', subgenreFilter: '', statusFilter: '' },
   col: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','series1','series2','status'], series2Filter: '' },
 };
 
@@ -1268,6 +1282,49 @@ function populateSeries2Filter() {
   select.innerHTML = '<option value="">All Series 2</option>' +
     values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
   select.disabled = false;
+}
+
+function setLibFilter(kind, value) {
+  STATE.lib[kind + 'Filter'] = value;
+  if (kind === 'genre') {
+    // Genre drives which Subgenre options are offered — re-derive them now.
+    updateLibSubgenreOptions();
+  }
+  runSearch('lib');
+}
+
+function populateLibFilters() {
+  const genreSel = document.getElementById('lib-genre-filter');
+  const statusSel = document.getElementById('lib-status-filter');
+  const genres = [...new Set(STATE.lib.items.map(b => b.genre).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  const statuses = [...new Set(STATE.lib.items.map(b => b.status).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  genreSel.innerHTML = '<option value="">All Genres</option>' +
+    genres.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  statusSel.innerHTML = '<option value="">All Statuses</option>' +
+    statuses.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  genreSel.disabled = false;
+  statusSel.disabled = false;
+
+  updateLibSubgenreOptions();
+}
+
+// Rebuilds the Subgenre dropdown from whichever books match the current
+// Genre filter (or the whole library, if no Genre is selected) — this is
+// what makes Subgenre cascade off Genre. Drops the current Subgenre
+// selection if it no longer applies under the new Genre.
+function updateLibSubgenreOptions() {
+  const sel = document.getElementById('lib-subgenre-filter');
+  const genreFilter = STATE.lib.genreFilter;
+  const pool = genreFilter ? STATE.lib.items.filter(b => b.genre === genreFilter) : STATE.lib.items;
+  const subgenres = [...new Set(pool.map(b => b.subgenre).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+
+  if (STATE.lib.subgenreFilter && !subgenres.includes(STATE.lib.subgenreFilter)) {
+    STATE.lib.subgenreFilter = '';
+  }
+  sel.innerHTML = '<option value="">All Subgenres</option>' +
+    subgenres.map(v => `<option value="${escapeHtml(v)}"${v === STATE.lib.subgenreFilter ? ' selected' : ''}>${escapeHtml(v)}</option>`).join('');
+  sel.disabled = false;
 }
 
 function showTab(tab) {
@@ -1339,11 +1396,13 @@ function runSearch(tab) {
   const emptyEl = document.getElementById(`${tab}-empty-hint`);
   const fields = STATE[tab].fields;
   const series2Filter = tab === 'col' ? STATE.col.series2Filter : '';
+  const libFiltersActive = tab === 'lib' &&
+    (STATE.lib.genreFilter || STATE.lib.subgenreFilter || STATE.lib.statusFilter);
   const defaultHint = tab === 'lib'
-    ? 'Type a title, author, status, or publisher above to search the library.'
+    ? 'Type a title, author, status, or publisher above, or use the filters, to search the library.'
     : 'Type a title, series, author, or status above to search the Collections, or pick a Series 2 value.';
 
-  if (!term && !series2Filter) {
+  if (!term && !series2Filter && !libFiltersActive) {
     tbody.innerHTML = '';
     countEl.textContent = '';
     emptyEl.textContent = defaultHint;
@@ -1353,7 +1412,11 @@ function runSearch(tab) {
 
   let matches = STATE[tab].items.filter(item =>
     (!term || fields.some(f => (item[f] || '').toLowerCase().includes(term))) &&
-    (!series2Filter || item.series2 === series2Filter)
+    (!series2Filter || item.series2 === series2Filter) &&
+    (tab !== 'lib' ||
+      ((!STATE.lib.genreFilter || item.genre === STATE.lib.genreFilter) &&
+       (!STATE.lib.subgenreFilter || item.subgenre === STATE.lib.subgenreFilter) &&
+       (!STATE.lib.statusFilter || item.status === STATE.lib.statusFilter)))
   );
 
   countEl.textContent = `${matches.length} result${matches.length !== 1 ? 's' : ''}`;
@@ -1394,6 +1457,14 @@ function runSearch(tab) {
 function clearSearch(tab) {
   const box = document.getElementById(`${tab}-search-box`);
   box.value = '';
+  if (tab === 'lib') {
+    STATE.lib.genreFilter = '';
+    STATE.lib.subgenreFilter = '';
+    STATE.lib.statusFilter = '';
+    document.getElementById('lib-genre-filter').value = '';
+    document.getElementById('lib-status-filter').value = '';
+    updateLibSubgenreOptions(); // repopulates the full Subgenre list now that Genre is cleared
+  }
   runSearch(tab);
   box.focus();
 }
@@ -1431,13 +1502,14 @@ async function loadLibrary() {
     const C = {
       isbn:      cols['isbn']      || 'A',
       genre:     cols['genre']     || 'B',
+      subgenre:  cols['subgenre']  || 'F',
       status:    cols['status']    || 'D',
       title:     cols['title']     || 'E',
       author:    cols['author']    || 'F',
       publisher: cols['publisher'] || 'G',
     };
 
-    const q = `select ${C.isbn}, ${C.title}, ${C.author}, ${C.status}, ${C.publisher}, ${C.genre} where ${C.title} is not null`;
+    const q = `select ${C.isbn}, ${C.title}, ${C.author}, ${C.status}, ${C.publisher}, ${C.genre}, ${C.subgenre} where ${C.title} is not null`;
     const d = await gvizFetch('Library v1', q);
     const rows = d.table?.rows || [];
 
@@ -1446,11 +1518,12 @@ async function loadLibrary() {
       const val = i => (c[i] && c[i].v != null) ? String(c[i].v).trim() : '';
       return {
         isbn: val(0), title: val(1), author: val(2), status: val(3),
-        publisher: val(4), genre: val(5)
+        publisher: val(4), genre: val(5), subgenre: val(6)
       };
     }).filter(b => b.title);
     STATE.lib.loaded = true;
     updatePageSubtitle();
+    populateLibFilters();
 
     const box = document.getElementById('lib-search-box');
     box.disabled = false;
