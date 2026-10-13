@@ -219,6 +219,39 @@ tbody tr:last-child td { border-bottom: none; }
 
 .table-scroll { max-height: 60vh; overflow-y: auto; overflow-x: auto; border-radius: 10px; -webkit-overflow-scrolling: touch; }
 
+.lib-row-main { cursor: pointer; }
+.lib-row-main .expand-chevron {
+  display: inline-block;
+  width: 10px;
+  margin-right: 6px;
+  color: #9ca3af;
+  transition: transform 0.15s ease;
+}
+.lib-row-main.expanded .expand-chevron { transform: rotate(90deg); color: #1e3a8a; }
+.lib-detail-row { display: none; }
+.lib-detail-row.open { display: table-row; }
+.lib-detail-row td {
+  background: #f9fafb;
+  padding: 12px 18px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.lib-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px 20px;
+}
+.lib-detail-grid > div { font-size: 13px; color: #1f2937; }
+.lib-detail-grid .lbl {
+  display: block;
+  color: #6b7280;
+  font-weight: 700;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  margin-bottom: 2px;
+}
+.lib-detail-notes { grid-column: 1 / -1; }
+
 /* ─── Mobile/portrait: keep the compact table view, just shrink it and let it
    scroll horizontally within its own box instead of stacking into cards ─── */
 @media (max-width: 640px) {
@@ -226,6 +259,7 @@ tbody tr:last-child td { border-bottom: none; }
   table { font-size: 12px; min-width: 560px; }
   thead th { padding: 8px 8px; }
   tbody td { padding: 7px 8px; }
+  .lib-detail-grid { grid-template-columns: 1fr 1fr; }
 }
 
 .empty-hint {
@@ -1433,12 +1467,27 @@ function runSearch(tab) {
   emptyEl.style.display = 'none';
   if (tab === 'lib') {
     tbody.innerHTML = matches.map(b => `
-      <tr>
-        <td data-label="Title">${escapeHtml(b.title)}</td>
+      <tr class="lib-row-main" onclick="toggleLibRow(this)">
+        <td data-label="Title"><span class="expand-chevron">▸</span>${escapeHtml(b.title)}</td>
         <td data-label="Author">${escapeHtml(b.author)}</td>
         <td data-label="Status">${statusChipHtml(b.status)}</td>
         <td data-label="Publisher">${escapeHtml(b.publisher)}</td>
         <td data-label="ISBN">${escapeHtml(b.isbn)}</td>
+      </tr>
+      <tr class="lib-detail-row">
+        <td colspan="5">
+          <div class="lib-detail-grid">
+            <div><span class="lbl">Genre</span>${escapeHtml(b.genre) || '—'}</div>
+            <div><span class="lbl">Subgenre</span>${escapeHtml(b.subgenre) || '—'}</div>
+            <div><span class="lbl">Published</span>${escapeHtml(b.published) || '—'}</div>
+            <div><span class="lbl">Pages</span>${escapeHtml(b.pages) || '—'}</div>
+            <div><span class="lbl">Purchased From</span>${escapeHtml(b.source) || '—'}</div>
+            <div><span class="lbl">Purchase Date</span>${escapeHtml(b.purchaseDate) || '—'}</div>
+            <div><span class="lbl">Value</span>${escapeHtml(b.value) || '—'}</div>
+            <div><span class="lbl">Illustrator(s)</span>${escapeHtml(b.illustrators) || '—'}</div>
+            <div class="lib-detail-notes"><span class="lbl">Notes</span>${escapeHtml(b.notes) || '—'}</div>
+          </div>
+        </td>
       </tr>
     `).join('');
   } else {
@@ -1452,6 +1501,13 @@ function runSearch(tab) {
       </tr>
     `).join('');
   }
+}
+
+function toggleLibRow(tr) {
+  const detail = tr.nextElementSibling;
+  if (!detail || !detail.classList.contains('lib-detail-row')) return;
+  const isOpen = detail.classList.toggle('open');
+  tr.classList.toggle('expanded', isOpen);
 }
 
 function clearSearch(tab) {
@@ -1500,25 +1556,48 @@ async function loadLibrary() {
     });
 
     const C = {
-      isbn:      cols['isbn']      || 'A',
-      genre:     cols['genre']     || 'B',
-      subgenre:  cols['subgenre']  || 'F',
-      status:    cols['status']    || 'D',
-      title:     cols['title']     || 'E',
-      author:    cols['author']    || 'F',
-      publisher: cols['publisher'] || 'G',
+      isbn:         cols['isbn']           || 'A',
+      genre:        cols['genre']          || 'B',
+      subgenre:     cols['subgenre']       || 'F',
+      status:       cols['status']         || 'D',
+      title:        cols['title']          || 'E',
+      author:       cols['author']         || 'F',
+      publisher:    cols['publisher']      || 'G',
+      published:    cols['published']      || 'K',
+      pages:        cols['pages']          || 'L',
+      notes:        cols['notes']          || 'M',
+      source:       cols['purchased from'] || 'N',
+      purchaseDate: cols['purchase date']  || 'O',
+      value:        cols['value']          || 'P',
+      illustrators: cols['illustrator(s)'] || cols['illustrators'] || 'R',
     };
 
-    const q = `select ${C.isbn}, ${C.title}, ${C.author}, ${C.status}, ${C.publisher}, ${C.genre}, ${C.subgenre} where ${C.title} is not null`;
+    const q = `select ${C.isbn}, ${C.title}, ${C.author}, ${C.status}, ${C.publisher}, ${C.genre}, ${C.subgenre}, ${C.published}, ${C.pages}, ${C.notes}, ${C.source}, ${C.purchaseDate}, ${C.value}, ${C.illustrators} where ${C.title} is not null`;
     const d = await gvizFetch('Library v1', q);
     const rows = d.table?.rows || [];
 
     STATE.lib.items = rows.map(r => {
       const c = r.c || [];
-      const val = i => (c[i] && c[i].v != null) ? String(c[i].v).trim() : '';
+      const val = i => {
+        const cell = c[i];
+        if (!cell || cell.v == null) return '';
+        if (cell.f != null) return String(cell.f).trim();
+        const v = cell.v;
+        if (typeof v === 'string') {
+          const m = v.match(/^Date\((\d+),(\d+),(\d+)/);
+          if (m) {
+            const mm = String(Number(m[2]) + 1).padStart(2, '0');
+            const dd = String(Number(m[3])).padStart(2, '0');
+            return `${mm}-${dd}-${m[1]}`;
+          }
+        }
+        return String(v).trim();
+      };
       return {
         isbn: val(0), title: val(1), author: val(2), status: val(3),
-        publisher: val(4), genre: val(5), subgenre: val(6)
+        publisher: val(4), genre: val(5), subgenre: val(6),
+        published: val(7), pages: val(8), notes: val(9), source: val(10),
+        purchaseDate: val(11), value: val(12), illustrators: val(13)
       };
     }).filter(b => b.title);
     STATE.lib.loaded = true;
