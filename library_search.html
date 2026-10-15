@@ -627,7 +627,7 @@ tbody tr:last-child td { border-bottom: none; }
         </table>
       </div>
       <div class="empty-hint" id="lib-empty-hint" style="display:none;padding:16px 18px;">
-        Type a title, author, status, or publisher above to search the library.
+        Type a title, author, status, publisher, or purchased-from source above to search the library.
       </div>
     </div>
   </div>
@@ -1287,7 +1287,7 @@ function gvizFetch(sheetName, tq) {
 
 // ─── Per-tab state ───
 const STATE = {
-  lib: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','status','publisher','isbn'], genreFilter: '', subgenreFilter: '', statusFilter: '' },
+  lib: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','status','publisher','isbn','source'], genreFilter: '', subgenreFilter: '', statusFilter: '' },
   col: { items: [], sortState: { field: null, dir: 1 }, fields: ['title','author','series1','series2','status'], series2Filter: '' },
 };
 
@@ -1433,7 +1433,7 @@ function runSearch(tab) {
   const libFiltersActive = tab === 'lib' &&
     (STATE.lib.genreFilter || STATE.lib.subgenreFilter || STATE.lib.statusFilter);
   const defaultHint = tab === 'lib'
-    ? 'Type a title, author, status, or publisher above, or use the filters, to search the library.'
+    ? 'Type a title, author, status, publisher, or purchased-from source above, or use the filters, to search the library.'
     : 'Type a title, series, author, or status above to search the Collections, or pick a Series 2 value.';
 
   if (!term && !series2Filter && !libFiltersActive) {
@@ -1606,7 +1606,7 @@ async function loadLibrary() {
 
     const box = document.getElementById('lib-search-box');
     box.disabled = false;
-    box.placeholder = 'Search by title, author, status, or publisher…';
+    box.placeholder = 'Search by title, author, status, publisher, or purchased from…';
     document.getElementById('lib-clear-btn').disabled = false;
     document.getElementById('lib-empty-hint').style.display = 'block';
 
